@@ -1,0 +1,37 @@
+<Project>
+
+  <!--
+    Common settings imported automatically by every project under this folder.
+    Individual projects should only override these when they have a specific reason.
+  -->
+
+  <PropertyGroup Label="Language and framework">
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Code quality">
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <!--
+      NuGet audit: low/moderate advisories stay as warnings so a newly published advisory
+      on a transitive dependency doesn't break every build. High/critical still fail.
+    -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Build reproducibility">
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- CI-only: normalise source paths in PDBs and enable deterministic CI behaviour. -->
+  <PropertyGroup Label="CI" Condition="'$(CI)' == 'true' or '$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

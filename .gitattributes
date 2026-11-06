@@ -1,0 +1,43 @@
+# Normalise all text files to LF in the repository and on checkout.
+# LF everywhere keeps Linux containers (Docker) and Windows/macOS dev machines consistent.
+* text=auto eol=lf
+
+# Source and config
+*.cs        text eol=lf diff=csharp
+*.csproj    text eol=lf
+*.props     text eol=lf
+*.targets   text eol=lf
+*.slnx      text eol=lf
+*.json      text eol=lf
+*.xml       text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.md        text eol=lf
+*.sql       text eol=lf
+*.sh        text eol=lf
+*.ps1       text eol=lf
+Dockerfile  text eol=lf
+*.dockerfile text eol=lf
+.env*       text eol=lf
+
+# Windows-only scripts need CRLF
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+
+# Legacy .sln files (Visual Studio rewrites them with CRLF)
+*.sln       text eol=crlf
+
+# Binary files - never convert or diff
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.dll   binary
+*.exe   binary
+*.pfx   binary
+*.p12   binary
+*.snk   binary

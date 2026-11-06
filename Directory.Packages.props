@@ -1,0 +1,44 @@
+<Project>
+
+  <!--
+    NuGet Central Package Management.
+    Every package version lives here. Project files reference packages WITHOUT a Version attribute:
+      <PackageReference Include="Serilog.AspNetCore" />
+    Versions verified as latest stable on nuget.org on 2026-11-06.
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Also pin transitive dependencies to the versions below when they appear in the graph. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="ASP.NET Core">
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup Label="Data access - EF Core and PostgreSQL">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup Label="Logging - Serilog">
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Settings.Configuration" Version="10.0.1" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup Label="Messaging - RabbitMQ and Kafka">
+    <PackageVersion Include="RabbitMQ.Client" Version="7.2.2" />
+    <PackageVersion Include="Confluent.Kafka" Version="2.16.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Health checks">
+    <!-- No 10.x release yet; 9.0.0 targets net8.0+ and runs on .NET 10. -->
+    <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="9.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Kafka" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

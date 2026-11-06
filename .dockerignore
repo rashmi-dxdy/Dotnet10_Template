@@ -1,0 +1,44 @@
+# Keep the Docker build context small and free of secrets and local build output.
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Build output
+**/bin/
+**/obj/
+**/out/
+**/publish/
+artifacts/
+TestResults/
+
+# IDE and editor folders
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# Secrets and local environment - never bake into images
+.env
+.env.*
+!.env.example
+**/appsettings.*.local.json
+**/secrets.json
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Docker files themselves
+**/Dockerfile*
+**/.dockerignore
+docker-compose*.yml
+compose*.yml
+
+# Docs and misc
+README.md
+**/*.md
+LICENSE
