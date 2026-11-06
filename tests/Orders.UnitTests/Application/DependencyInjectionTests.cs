@@ -1,5 +1,5 @@
-using Orders.Application;
 using Microsoft.Extensions.DependencyInjection;
+using Orders.Application;
 
 namespace Orders.UnitTests.Application;
 

@@ -1,5 +1,5 @@
-using Notifications.Application;
 using Microsoft.Extensions.DependencyInjection;
+using Notifications.Application;
 
 namespace Notifications.UnitTests.Application;
 

@@ -13,7 +13,15 @@
 
   <PropertyGroup Label="Code quality">
     <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- Enable every compiler warning wave available in the current SDK. -->
+    <WarningLevel>9999</WarningLevel>
+    <!-- Run IDE code-style rules (IDExxxx) during command-line builds, not only in the editor. -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!--
+      Required for IDE0005 (unnecessary usings) to run during build, and validates XML doc comments
+      that ARE written. Missing docs (CS1591) is not enforced - see .editorconfig.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
     <!--

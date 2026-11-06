@@ -40,11 +40,11 @@ public sealed class DependencyRuleTests
         var allowed = AllowedReferences(project);
 
         var violations = project.ProjectReferences.Where(r => !allowed.Contains(r)).ToList();
-
-        Assert.True(
-            violations.Count == 0,
+        var message =
             $"{project.Name} ({project.Kind}) has disallowed references: {string.Join(", ", violations)}. "
-            + $"Allowed: {string.Join(", ", allowed.Order(StringComparer.Ordinal))}.");
+            + $"Allowed: {string.Join(", ", allowed.Order(StringComparer.Ordinal))}.";
+
+        Assert.True(violations.Count == 0, message);
     }
 
     [Theory]
@@ -56,14 +56,14 @@ public sealed class DependencyRuleTests
         var crossService = project.ProjectReferences
             .Where(All.ContainsKey)
             .Select(r => All[r])
-            .Where(r => r.Service is not null && r.Service != project.Service)
+            .Where(r => r.Service is not null && !string.Equals(r.Service, project.Service, StringComparison.Ordinal))
             .Select(r => r.Name)
             .ToList();
-
-        Assert.True(
-            crossService.Count == 0,
+        var message =
             $"{project.Name} references another service: {string.Join(", ", crossService)}. "
-            + "Services must communicate through IntegrationEvents only.");
+            + "Services must communicate through IntegrationEvents only.";
+
+        Assert.True(crossService.Count == 0, message);
     }
 
     [Fact]

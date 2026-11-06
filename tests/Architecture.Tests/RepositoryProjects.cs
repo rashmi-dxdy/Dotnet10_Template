@@ -32,17 +32,18 @@ internal static class RepositoryProjects
     public const string BuildingBlocksInfrastructure = "BuildingBlocks.Infrastructure";
     public const string IntegrationEvents = "IntegrationEvents";
 
+    private static readonly string[] ProjectFolders = ["src", "tests"];
     private static readonly Lazy<string> LazyRoot = new(FindRoot);
     private static readonly Lazy<IReadOnlyDictionary<string, ProjectInfo>> LazyProjects = new(LoadAll);
 
     public static string Root => LazyRoot.Value;
 
-    /// <summary>All projects under <c>src</c> and <c>tests</c>, keyed by project name.</summary>
+    /// <summary>Gets all projects under <c>src</c> and <c>tests</c>, keyed by project name.</summary>
     public static IReadOnlyDictionary<string, ProjectInfo> All => LazyProjects.Value;
 
-    public static IEnumerable<ProjectInfo> OfKind(ProjectKind kind) => All.Values.Where(p => p.Kind == kind);
-
     public static IEnumerable<ProjectInfo> ServiceProjects => All.Values.Where(p => p.Service is not null);
+
+    public static IEnumerable<ProjectInfo> OfKind(ProjectKind kind) => All.Values.Where(p => p.Kind == kind);
 
     private static string FindRoot()
     {
@@ -56,8 +57,6 @@ internal static class RepositoryProjects
             ?? throw new InvalidOperationException(
                 $"Could not find {SolutionFileName} in any parent of {AppContext.BaseDirectory}.");
     }
-
-    private static readonly string[] ProjectFolders = ["src", "tests"];
 
     private static Dictionary<string, ProjectInfo> LoadAll() =>
         ProjectFolders
@@ -117,7 +116,7 @@ internal static class RepositoryProjects
 
         // src/Services/{Service}/{Service}.{Layer}/{Service}.{Layer}.csproj
         var segments = relativePath.Split('/');
-        if (segments.Length == 5 && segments[1] == "Services")
+        if (segments.Length == 5 && string.Equals(segments[1], "Services", StringComparison.Ordinal))
         {
             var service = segments[2];
             var layer = name.StartsWith(service + ".", StringComparison.Ordinal)

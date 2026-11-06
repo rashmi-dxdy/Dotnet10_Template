@@ -42,8 +42,11 @@ gets the same build rules, analyzers and package versions.
 # Verify the SDK selected by global.json
 dotnet --version
 
-# Restore and build
-dotnet build Dotnet10Template.slnx
+# Full quality gate: restore, format check, build (warnings as errors), tests
+./scripts/verify.sh            # PowerShell: ./scripts/verify.ps1
+
+# Fix formatting and auto-fixable analyzer issues
+./scripts/format.sh            # PowerShell: ./scripts/format.ps1
 
 # Create your local environment file (never commit .env)
 cp .env.example .env
@@ -67,7 +70,8 @@ To upgrade a package, change its version in `Directory.Packages.props` only.
 `Directory.Build.props` applies these settings to every project:
 
 - `net10.0`, nullable reference types and implicit usings
-- `AnalysisLevel=latest-recommended`, with code style enforced during the build
+- `AnalysisLevel=latest-recommended`, all compiler warning waves, with code style enforced during the build
+- Meziantou, SonarAnalyzer, Roslynator and StyleCop analyzers in every project (see [docs/code-quality.md](docs/code-quality.md))
 - Warnings treated as errors. Low/moderate NuGet vulnerability advisories (NU1901/NU1902) stay as warnings.
 - Deterministic builds. `ContinuousIntegrationBuild` is turned on automatically when `CI`, `GITHUB_ACTIONS` or `TF_BUILD` is set.
 
@@ -75,6 +79,8 @@ To upgrade a package, change its version in `Directory.Packages.props` only.
 
 `.editorconfig` enforces file-scoped namespaces, explicit accessibility modifiers, `_camelCase` private fields,
 PascalCase types and members, `I`-prefixed interfaces and `T`-prefixed type parameters.
+It also sets every analyzer severity. [docs/code-quality.md](docs/code-quality.md) explains which tool owns which rules
+and **how to fix analyzer violations**.
 Run `dotnet format` to apply the rules.
 
 ### Line endings

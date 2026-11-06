@@ -63,7 +63,7 @@ public sealed class SolutionIntegrityTests
 
         if (!visiting.Add(project))
         {
-            var chain = path.Reverse().SkipWhile(p => p != project).Append(project);
+            var chain = path.Reverse().SkipWhile(p => !string.Equals(p, project, StringComparison.Ordinal)).Append(project);
             return string.Join(" -> ", chain);
         }
 
