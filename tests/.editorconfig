@@ -1,0 +1,4 @@
+# Test-specific overrides (inherits the root .editorconfig).
+[*.cs]
+# Test names use underscores: Method_Scenario_ExpectedResult
+dotnet_diagnostic.CA1707.severity = none

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Enforces the project dependency rules by reading the .csproj files from the repository.
+    It deliberately has no project references: rules are checked on declared references,
+    which also catches references the compiler would drop because they are not used yet.
+  -->
+
+</Project>

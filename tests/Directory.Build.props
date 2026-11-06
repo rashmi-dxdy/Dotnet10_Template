@@ -1,0 +1,24 @@
+<Project>
+
+  <!-- Inherit the repository-wide settings, then add test-specific ones. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!--
+      xUnit v3 test projects are self-hosting executables running on Microsoft.Testing.Platform
+      (opted in for `dotnet test` via the "test" section of global.json).
+    -->
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

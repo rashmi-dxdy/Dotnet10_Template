@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Catalog domain layer: plain C# only. No project or package references (enforced by Architecture.Tests). -->
+
+</Project>

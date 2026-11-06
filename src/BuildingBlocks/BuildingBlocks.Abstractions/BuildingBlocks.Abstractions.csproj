@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Technical abstractions shared by all services (e.g. messaging, clock, unit-of-work interfaces).
+    NEVER put business entities or business rules here. No project references allowed.
+  -->
+
+</Project>

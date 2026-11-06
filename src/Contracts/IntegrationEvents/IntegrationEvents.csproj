@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Cross-service message contracts ONLY (plain, serializable records).
+    No project or package references, so the contracts can be versioned and shipped independently.
+  -->
+
+</Project>
