@@ -29,6 +29,7 @@ internal static class RepositoryProjects
 {
     public const string SolutionFileName = "Dotnet10Template.slnx";
     public const string BuildingBlocksAbstractions = "BuildingBlocks.Abstractions";
+    public const string BuildingBlocksApplication = "BuildingBlocks.Application";
     public const string BuildingBlocksInfrastructure = "BuildingBlocks.Infrastructure";
     public const string IntegrationEvents = "IntegrationEvents";
 

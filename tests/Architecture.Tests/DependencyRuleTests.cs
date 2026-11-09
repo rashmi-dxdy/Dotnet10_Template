@@ -74,6 +74,28 @@ public sealed class DependencyRuleTests
         Assert.Empty(abstractions.PackageReferences);
     }
 
+    /// <summary>
+    /// BuildingBlocks.Application carries MediatR, so Domain must never reach it, and it must not
+    /// depend on infrastructure or services.
+    /// </summary>
+    [Fact]
+    public void BuildingBlocksApplication_HasNoProjectReferences() =>
+        Assert.Empty(All[BuildingBlocksApplication].ProjectReferences);
+
+    /// <summary>MediatR 13+ is commercially licensed; only the Apache-2.0 12.x line is allowed.</summary>
+    [Fact]
+    public void MediatR_IsPinnedToVersion12()
+    {
+        var props = System.Xml.Linq.XDocument.Load(Path.Combine(Root, "Directory.Packages.props"));
+        var version = props.Descendants("PackageVersion")
+            .Where(e => string.Equals((string?)e.Attribute("Include"), "MediatR", StringComparison.Ordinal))
+            .Select(e => (string?)e.Attribute("Version"))
+            .SingleOrDefault();
+
+        Assert.NotNull(version);
+        Assert.StartsWith("12.", version, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void BuildingBlocksInfrastructure_ReferencesOnlyBuildingBlocksAbstractions() =>
         Assert.All(
@@ -96,12 +118,14 @@ public sealed class DependencyRuleTests
         return project.Kind switch
         {
             ProjectKind.Domain => [BuildingBlocksAbstractions],
-            ProjectKind.Application => [$"{s}.Domain", BuildingBlocksAbstractions, IntegrationEvents],
+            ProjectKind.Application =>
+                [$"{s}.Domain", BuildingBlocksAbstractions, BuildingBlocksApplication, IntegrationEvents],
             ProjectKind.Infrastructure =>
             [
                 $"{s}.Application",
                 $"{s}.Domain",
                 BuildingBlocksAbstractions,
+                BuildingBlocksApplication,
                 BuildingBlocksInfrastructure,
                 IntegrationEvents,
             ],
@@ -110,6 +134,7 @@ public sealed class DependencyRuleTests
                 $"{s}.Application",
                 $"{s}.Infrastructure",
                 BuildingBlocksAbstractions,
+                BuildingBlocksApplication,
                 BuildingBlocksInfrastructure,
             ],
             _ => throw new InvalidOperationException($"{project.Name} is not a service project."),

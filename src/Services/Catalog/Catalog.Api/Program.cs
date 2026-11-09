@@ -1,3 +1,4 @@
+using Catalog.Api.ExceptionHandling;
 using Catalog.Application.DependencyInjection;
 using Catalog.Infrastructure.DependencyInjection;
 
@@ -7,10 +8,14 @@ builder.Services
     .AddCatalogApplication()
     .AddCatalogInfrastructure(builder.Configuration);
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

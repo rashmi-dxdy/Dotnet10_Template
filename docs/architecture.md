@@ -10,7 +10,8 @@ marked **(enforced)**, so breaking one fails the build pipeline.
 ```text
 src/
   BuildingBlocks/
-    BuildingBlocks.Abstractions     Technical contracts: CQRS, IDomainEvent, IIntegrationEvent, IDateTimeProvider
+    BuildingBlocks.Abstractions     Technical contracts: IDomainEvent, IIntegrationEvent, IDateTimeProvider
+    BuildingBlocks.Application      CQRS contracts on MediatR 12, logging + FluentValidation behaviors, AddCqrs()
     BuildingBlocks.Infrastructure   Technical implementations shared by services (e.g. SystemDateTimeProvider)
   Contracts/
     IntegrationEvents               Cross-service message contracts only
@@ -64,23 +65,40 @@ Writes and reads are separate use cases with separate types:
 |---|---|
 | `Commands/`, `Queries/` | One sub-folder per use case: request record, handler and (for queries) the DTO |
 | `Validators/` | Input validation (shape and format). Business invariants stay in the Domain. |
-| `Behaviors/` | Cross-cutting decorators around handlers (logging, validation, transactions) |
+| `Behaviors/` | MediatR pipeline behaviors (logging, validation, transactions) |
 | `Abstractions/` | Ports the application needs from the outside (e.g. unit of work, external services) |
 | `DependencyInjection/` | `Add<Service>Application()` registration |
 
-### No mediator
+### Mediator: MediatR 12
 
-The template deliberately has **no mediator library and no custom dispatcher**:
+Commands and queries are dispatched with **MediatR 12.5.0**, the last Apache-2.0 release.
 
-- MediatR moved to a commercial license from v13, and other mediator packages had no license
-  information that could be verified from their package metadata when this template was created.
-- Handlers are registered in DI as `ICommandHandler<,>` / `IQueryHandler<,>`. An endpoint or consumer
-  injects the specific handler it needs. That keeps each call explicit and easy to navigate.
-- Cross-cutting behavior is added with decorators around handler interfaces, registered in
-  `DependencyInjection/`.
+- **License:** MediatR 13+ is commercially licensed and needs a license key. The version is pinned in
+  `Directory.Packages.props`, and `Architecture.Tests` fails if it is not `12.x` **(enforced)**.
+- **Where it lives:** `BuildingBlocks.Application`. `ICommand<T>` / `IQuery<T>` extend `IRequest<T>`, and
+  `ICommandHandler<,>` / `IQueryHandler<,>` extend `IRequestHandler<,>`. `BuildingBlocks.Abstractions`
+  stays package-free, so Domain never sees MediatR.
+- **Registration:** `Add<Service>Application()` calls `services.AddCqrs(assembly)`. That registers
+  `ISender`/`IMediator`, scans the Application assembly for handlers and adds the shared behaviors.
+- **Dispatch:** endpoints and consumers inject `ISender` and call `Send(command, cancellationToken)`.
+- **Validation:** FluentValidation 12 (Apache-2.0). `AddCqrs` registers every `AbstractValidator<T>` in the
+  Application assembly. `ValidationBehavior` runs all validators for a request before its handler and
+  throws `FluentValidation.ValidationException` with every failure. The API hosts' `ValidationExceptionHandler`
+  turns that into a `400` RFC 9457 validation problem response.
+- **Behaviors:** implement `IPipelineBehavior<TRequest, TResponse>`. Shared ones (`LoggingBehavior`, then
+  `ValidationBehavior`) are in `BuildingBlocks.Application/Behaviors`. Service-specific ones go in the service's `Behaviors/` and are
+  added via the `configure` callback of `AddCqrs`. Behaviors run in registration order, outermost first.
 
-To adopt a mediator later, first check its current license and .NET 10 compatibility, then add it to
-`Directory.Packages.props`.
+```csharp
+public sealed record CreateProductCommand(string Name) : ICommand<Guid>;
+
+internal sealed class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, Guid>
+{
+    public Task<Guid> Handle(CreateProductCommand command, CancellationToken cancellationToken) => ...;
+}
+
+app.MapPost("/products", (CreateProductCommand cmd, ISender sender, CancellationToken ct) => sender.Send(cmd, ct));
+```
 
 ## 4. Dependency inversion
 
@@ -100,10 +118,11 @@ BuildingBlocks.Infrastructure ──► BuildingBlocks.Abstractions
 | Project | May reference **(enforced)** |
 |---|---|
 | `X.Domain` | `BuildingBlocks.Abstractions` only, no packages |
-| `X.Application` | own Domain, `BuildingBlocks.Abstractions`, `IntegrationEvents` |
+| `X.Application` | own Domain, `BuildingBlocks.Abstractions`, `BuildingBlocks.Application`, `IntegrationEvents` |
 | `X.Infrastructure` | own Application and Domain, `BuildingBlocks.*`, `IntegrationEvents` |
 | `X.Api` / `X.Worker` | own Application and Infrastructure, `BuildingBlocks.*` |
 | `BuildingBlocks.Abstractions` | nothing: no projects, no packages |
+| `BuildingBlocks.Application` | no projects; packages MediatR 12.x, FluentValidation and logging abstractions |
 | `IntegrationEvents` | `BuildingBlocks.Abstractions` only, no packages |
 
 Examples of the inversion:

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared application-layer plumbing: CQRS contracts on top of MediatR, pipeline behaviors
+    (logging, FluentValidation) and their registration.
+    MediatR is pinned to 12.x (Apache-2.0); v13+ is commercially licensed - see docs/architecture.md.
+    Only Application, Infrastructure and host projects may reference this; Domain never does.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

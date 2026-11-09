@@ -29,6 +29,20 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup Label="CQRS - MediatR">
+    <!--
+      Pinned to 12.x on purpose: 12.5.0 is the last Apache-2.0 release. MediatR 13+ is commercially
+      licensed (license key required). Do not upgrade without reviewing the license.
+    -->
+    <PackageVersion Include="MediatR" Version="12.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Validation - FluentValidation (Apache-2.0)">
+    <PackageVersion Include="FluentValidation" Version="12.2.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
   </ItemGroup>
 
   <ItemGroup Label="ASP.NET Core">

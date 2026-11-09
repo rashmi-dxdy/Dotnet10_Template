@@ -1,3 +1,4 @@
+using BuildingBlocks.Application.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Orders.Application.DependencyInjection;
@@ -16,10 +17,12 @@ public static class ApplicationServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Extension points, in registration order:
-        //   Commands/, Queries/  -> handlers as ICommandHandler<,> / IQueryHandler<,> (scoped).
-        //   Validators/          -> command and query validators.
-        //   Behaviors/           -> decorators around the handlers registered above.
+        // MediatR + FluentValidation: registers ISender/IMediator, every handler in Commands/ and
+        // Queries/, every validator in Validators/, and the shared pipeline behaviors (logging, validation).
+        // Add service-specific behaviors from Behaviors/ via the configure callback:
+        //   AddCqrs(assembly, cfg => cfg.AddOpenBehavior(typeof(MyBehavior<,>))).
+        services.AddCqrs(typeof(ApplicationServiceCollectionExtensions).Assembly);
+
         return services;
     }
 }

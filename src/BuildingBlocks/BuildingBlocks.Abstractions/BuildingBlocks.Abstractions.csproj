@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Technical abstractions shared by all services: CQRS contracts, event markers, time.
+    Technical abstractions shared by all services: event markers, time.
     Pure C#: NO project or package references (enforced by Architecture.Tests), so Domain and
     IntegrationEvents may depend on it without pulling in EF Core, RabbitMQ, Kafka or anything else.
     NEVER put business entities or business rules here.
