@@ -1,15 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Notifications.Application;
+namespace Notifications.Application.DependencyInjection;
 
 /// <summary>
 /// Registration entry point for the Notifications application layer.
 /// </summary>
-public static class DependencyInjection
+public static class ApplicationServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers Notifications application services. Extension point: add use cases, validators and
-    /// application services here.
+    /// Registers Notifications application services.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same service collection, for chaining.</returns>
@@ -17,6 +16,10 @@ public static class DependencyInjection
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // Extension points, in registration order:
+        //   Commands/, Queries/  -> handlers as ICommandHandler<,> / IQueryHandler<,> (scoped).
+        //   Validators/          -> command and query validators.
+        //   Behaviors/           -> decorators around the handlers registered above.
         return services;
     }
 }

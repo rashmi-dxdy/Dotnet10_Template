@@ -13,7 +13,6 @@ No project file needs to opt in.
 | [Meziantou.Analyzer](https://github.com/meziantou/Meziantou.Analyzer) | 3.0.321 | `MAxxxx` | API usage pitfalls (string comparison, culture, etc.) |
 | [SonarAnalyzer.CSharp](https://rules.sonarsource.com/csharp/) | 10.35.0.4138 | `Sxxxx` | Bugs, code smells, security hotspots |
 | [Roslynator.Analyzers](https://josefpihrt.github.io/docs/roslynator/analyzers) | 5.0.1 | `RCSxxxx` | Refactoring hints (default severities, mostly IDE-only) |
-| [StyleCop.Analyzers](https://github.com/DotNetAnalyzers/StyleCopAnalyzers) | 1.1.118 | `SAxxxx` | Ordering, layout and readability only |
 | `dotnet format` | SDK | `WHITESPACE`, `IMPORTS` | Whitespace, indentation, using order |
 
 | File | Purpose |
@@ -29,15 +28,18 @@ Each problem should be reported by exactly one tool. When two analyzers report t
 is switched off in `.editorconfig`, with a comment naming the rule that owns it. The overlaps were found by
 building a file full of deliberate violations, so the list reflects real duplicates.
 
-- **StyleCop** keeps its ordering, layout, readability and maintainability rules. It does not handle spacing
-  (that's `dotnet format`), naming (IDE1006) or documentation (optional here). It's pinned to 1.1.118, the
-  latest stable release; 1.2+ is still in beta. That version predates modern C#, so one rule (SA1516) is off
-  for `Program.cs` only.
-- **One type per file** is not enforced (`SA1402` and `MA0048` off). Small related types such as enums and
-  records may live next to the type that uses them.
+- **One type per file** is not enforced (`MA0048` off). Small related types such as enums and records may
+  live next to the type that uses them.
 - **Documentation comments** are optional (`CS1591` off). Doc comments that *are* written are still checked.
 
 No rule is suppressed with a blanket `NoWarn`.
+
+### Why StyleCop.Analyzers is not used
+
+Its only stable release (1.1.118) dates from 2019 and predates modern C#. In this repository it crashed on
+C# 12 syntax and reported false positives for .NET 10 top-level programs. Most of its rules duplicate
+`dotnet format`, the IDE code-style rules or Meziantou/Sonar. The rest (member ordering, blank-line layout)
+are left to code review. Reconsider it when a stable 1.2+ release ships.
 
 ## Fixing violations
 
@@ -65,9 +67,6 @@ Warnings are errors, so any violation fails the build. Work through these steps 
    | `CA1861` | Move constant arrays passed as arguments into `static readonly` fields |
    | `MA0006` | `string.Equals(a, b, StringComparison.Ordinal)` instead of `==` |
    | `MA0007` | Add a trailing comma to the last item of a multi-line initializer (fixed by `format`) |
-   | `SA1118` | Extract a multi-line argument into a local variable |
-   | `SA1201` / `SA1202` / `SA1204` | Reorder members: fields, constructors, properties, methods; public before private; static before instance |
-   | `SA1512` / `SA1515` | Comment placement: no blank line after a comment; a blank line before it |
 
 4. **If a rule is genuinely wrong for one specific place,** suppress it as narrowly as possible and give a
    reason:

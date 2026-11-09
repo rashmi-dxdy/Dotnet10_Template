@@ -231,12 +231,11 @@ dotnet_naming_rule.locals_and_parameters_should_be_camel_case.severity = warning
 # Analyzer policy
 #
 # Ownership, to avoid duplicate diagnostics for the same problem:
-#   - Formatting/whitespace ........ dotnet format (IDE0055) - StyleCop spacing rules off
-#   - Naming ....................... IDE1006 naming rules above - StyleCop naming rules off
+#   - Formatting/whitespace/usings . dotnet format (IDE0055, IMPORTS)
+#   - Naming ....................... IDE1006 naming rules above
 #   - Code style ................... IDExxxx rules above
 #   - Correctness/reliability ...... CAxxxx (.NET SDK), Sxxxx (Sonar), MAxxxx (Meziantou)
 #   - Refactoring hints ............ RCSxxxx (Roslynator, default severities: mostly IDE-only)
-#   - Ordering/layout/readability .. StyleCop (SAxxxx), minus rules that duplicate the above
 #
 # Every non-default severity below states WHY. Prefer fixing code over adding entries here.
 # See docs/code-quality.md.
@@ -259,10 +258,10 @@ dotnet_diagnostic.IDE1006.severity = warning
 # ConfigureAwait(false): ASP.NET Core and the generic host have no SynchronizationContext,
 # so it adds noise without benefit in services. Revisit for reusable libraries.
 dotnet_diagnostic.MA0004.severity = none
-# Trailing comma in multi-line initializers (diff-friendly). Owned by Meziantou; SA1413 is off.
+# Trailing comma in multi-line initializers (diff-friendly).
 dotnet_diagnostic.MA0007.severity = warning
 # File name must match type name: off by team decision - small related types (enums, records)
-# may live next to the type that uses them. See SA1402 below.
+# may live next to the type that uses them.
 dotnet_diagnostic.MA0048.severity = none
 
 #### SonarAnalyzer.CSharp ####
@@ -276,49 +275,6 @@ dotnet_diagnostic.S101.severity = none
 dotnet_diagnostic.S2325.severity = none
 # S2933: make field readonly - duplicates IDE0044 (dotnet_style_readonly_field).
 dotnet_diagnostic.S2933.severity = none
-
-#### StyleCop.Analyzers ####
-# Whole categories owned by other tools:
-#   Spacing       -> dotnet format (IDE0055)
-#   Naming        -> IDE1006 naming rules (StyleCop's conflict: SA1309 forbids _camelCase fields)
-#   Documentation -> documentation is optional (CS1591 off)
-dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpacingRules.severity = none
-dotnet_analyzer_diagnostic.category-StyleCop.CSharp.NamingRules.severity = none
-dotnet_analyzer_diagnostic.category-StyleCop.CSharp.DocumentationRules.severity = none
-
-# Individual rules that conflict with this repository's conventions:
-# SA1101: requires 'this.' - conflicts with dotnet_style_qualification_* = false.
-dotnet_diagnostic.SA1101.severity = none
-# SA1200: requires usings inside the namespace - conflicts with csharp_using_directive_placement.
-dotnet_diagnostic.SA1200.severity = none
-
-# SA1402: one type per file - off by team decision (see MA0048 above).
-dotnet_diagnostic.SA1402.severity = none
-
-# Individual rules that duplicate another tool:
-# SA1121: use built-in type alias - duplicates IDE0049 (dotnet_style_predefined_type_*).
-dotnet_diagnostic.SA1121.severity = none
-# SA1208/SA1210: using ordering - owned by dotnet format's IMPORTS check (dotnet_sort_system_directives_first).
-dotnet_diagnostic.SA1208.severity = none
-dotnet_diagnostic.SA1210.severity = none
-# SA1400: access modifier required - duplicates IDE0040 (dotnet_style_require_accessibility_modifiers).
-dotnet_diagnostic.SA1400.severity = none
-# SA1413: trailing commas - duplicates MA0007.
-dotnet_diagnostic.SA1413.severity = none
-# SA1500-SA1503: brace placement/omission - owned by dotnet format and IDE0011 (csharp_prefer_braces).
-dotnet_diagnostic.SA1500.severity = none
-dotnet_diagnostic.SA1501.severity = none
-dotnet_diagnostic.SA1502.severity = none
-dotnet_diagnostic.SA1503.severity = none
-
-###############################################################################
-# Narrow, tool-limitation exceptions
-###############################################################################
-# StyleCop 1.1.118 (2019) predates top-level statements. In ASP.NET Core 10 projects, where the SDK
-# also generates a 'public partial class Program', it reports a location-less SA1516 against
-# Program.cs that cannot be fixed in code. Remove when StyleCop.Analyzers ships a stable 1.2+.
-[**/Program.cs]
-dotnet_diagnostic.SA1516.severity = none
 
 ###############################################################################
 # Generated code (EF Core migrations, source generators) - don't enforce style

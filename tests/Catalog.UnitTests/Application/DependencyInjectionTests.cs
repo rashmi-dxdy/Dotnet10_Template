@@ -1,4 +1,4 @@
-using Catalog.Application;
+using Catalog.Application.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Catalog.UnitTests.Application;

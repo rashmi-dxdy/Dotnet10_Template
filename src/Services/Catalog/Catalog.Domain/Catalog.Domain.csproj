@@ -1,5 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Catalog domain layer: plain C# only. No project or package references (enforced by Architecture.Tests). -->
+  <!--
+    Catalog domain layer: plain C#. May reference ONLY BuildingBlocks.Abstractions (for IDomainEvent);
+    no package references (enforced by Architecture.Tests).
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks.Abstractions\BuildingBlocks.Abstractions.csproj" />
+  </ItemGroup>
 
 </Project>

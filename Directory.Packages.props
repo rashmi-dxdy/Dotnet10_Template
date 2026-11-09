@@ -16,14 +16,13 @@
   <!--
     Analyzers applied to EVERY project (GlobalPackageReference = implicit PackageReference with
     PrivateAssets="all", so they never flow to consumers). Severities are configured in .editorconfig.
-    StyleCop.Analyzers: 1.1.118 is the latest STABLE release (2019); 1.2+/1.3 are still beta. Only its
-    non-overlapping rule categories are enabled - see .editorconfig.
+    StyleCop.Analyzers is intentionally NOT used: its only stable release (1.1.118, 2019) predates
+    modern C#, and its useful rules overlap with dotnet format, IDE rules and the analyzers below.
   -->
   <ItemGroup Label="Analyzers (all projects)">
     <GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.321" />
     <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.1" />
     <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
-    <GlobalPackageReference Include="StyleCop.Analyzers" Version="1.1.118" />
   </ItemGroup>
 
   <ItemGroup Label="Microsoft.Extensions">

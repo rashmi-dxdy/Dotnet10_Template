@@ -24,13 +24,8 @@ public sealed class DependencyRuleTests
 
     [Theory]
     [MemberData(nameof(DomainProjectNames))]
-    public void Domain_HasNoProjectOrPackageReferences(string projectName)
-    {
-        var project = All[projectName];
-
-        Assert.Empty(project.ProjectReferences);
-        Assert.Empty(project.PackageReferences);
-    }
+    public void Domain_HasNoPackageReferences(string projectName) =>
+        Assert.Empty(All[projectName].PackageReferences);
 
     [Theory]
     [MemberData(nameof(ServiceProjectNames))]
@@ -66,9 +61,18 @@ public sealed class DependencyRuleTests
         Assert.True(crossService.Count == 0, message);
     }
 
+    /// <summary>
+    /// Domain and IntegrationEvents depend on BuildingBlocks.Abstractions, so it must stay free of
+    /// any technology (EF Core, RabbitMQ, Kafka, ...) and of other projects.
+    /// </summary>
     [Fact]
-    public void BuildingBlocksAbstractions_HasNoProjectReferences() =>
-        Assert.Empty(All[BuildingBlocksAbstractions].ProjectReferences);
+    public void BuildingBlocksAbstractions_HasNoProjectOrPackageReferences()
+    {
+        var abstractions = All[BuildingBlocksAbstractions];
+
+        Assert.Empty(abstractions.ProjectReferences);
+        Assert.Empty(abstractions.PackageReferences);
+    }
 
     [Fact]
     public void BuildingBlocksInfrastructure_ReferencesOnlyBuildingBlocksAbstractions() =>
@@ -77,11 +81,11 @@ public sealed class DependencyRuleTests
             r => Assert.Equal(BuildingBlocksAbstractions, r));
 
     [Fact]
-    public void IntegrationEvents_HasNoProjectOrPackageReferences()
+    public void IntegrationEvents_ReferencesOnlyBuildingBlocksAbstractions_AndNoPackages()
     {
         var contracts = All[IntegrationEvents];
 
-        Assert.Empty(contracts.ProjectReferences);
+        Assert.All(contracts.ProjectReferences, r => Assert.Equal(BuildingBlocksAbstractions, r));
         Assert.Empty(contracts.PackageReferences);
     }
 
@@ -91,7 +95,7 @@ public sealed class DependencyRuleTests
 
         return project.Kind switch
         {
-            ProjectKind.Domain => [],
+            ProjectKind.Domain => [BuildingBlocksAbstractions],
             ProjectKind.Application => [$"{s}.Domain", BuildingBlocksAbstractions, IntegrationEvents],
             ProjectKind.Infrastructure =>
             [

@@ -1,22 +1,21 @@
-using BuildingBlocks.Infrastructure;
+using BuildingBlocks.Infrastructure.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Catalog.Infrastructure;
+namespace Notifications.Infrastructure.DependencyInjection;
 
 /// <summary>
-/// Registration entry point for the Catalog infrastructure layer.
+/// Registration entry point for the Notifications infrastructure layer.
 /// </summary>
-public static class DependencyInjection
+public static class InfrastructureServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers Catalog infrastructure services. Extension point: add persistence, messaging and
-    /// other external adapters here.
+    /// Registers Notifications infrastructure services.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <returns>The same service collection, for chaining.</returns>
-    public static IServiceCollection AddCatalogInfrastructure(
+    public static IServiceCollection AddNotificationsInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -25,6 +24,10 @@ public static class DependencyInjection
 
         services.AddBuildingBlocksInfrastructure(configuration);
 
+        // Extension points:
+        //   Persistence/       -> DbContext (PostgreSQL) and repository implementations.
+        //   Messaging/         -> RabbitMQ/Kafka publishers, consumers and outbox.
+        //   ExternalServices/  -> HTTP and third-party clients.
         return services;
     }
 }

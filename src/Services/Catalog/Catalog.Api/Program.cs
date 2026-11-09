@@ -1,5 +1,5 @@
-using Catalog.Application;
-using Catalog.Infrastructure;
+using Catalog.Application.DependencyInjection;
+using Catalog.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 

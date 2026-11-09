@@ -1,5 +1,5 @@
-using Notifications.Application;
-using Notifications.Infrastructure;
+using Notifications.Application.DependencyInjection;
+using Notifications.Infrastructure.DependencyInjection;
 
 var builder = Host.CreateApplicationBuilder(args);
 

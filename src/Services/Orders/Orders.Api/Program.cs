@@ -1,5 +1,5 @@
-using Orders.Application;
-using Orders.Infrastructure;
+using Orders.Application.DependencyInjection;
+using Orders.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 

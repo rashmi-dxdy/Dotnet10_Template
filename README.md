@@ -36,6 +36,11 @@ gets the same build rules, analyzers and package versions.
 └── ...
 ```
 
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md): DDD boundaries, CQRS, dependency rules, events, cross-service communication
+- [docs/code-quality.md](docs/code-quality.md): analyzers, formatting and how to fix violations
+
 ## Getting started
 
 ```bash
@@ -71,7 +76,7 @@ To upgrade a package, change its version in `Directory.Packages.props` only.
 
 - `net10.0`, nullable reference types and implicit usings
 - `AnalysisLevel=latest-recommended`, all compiler warning waves, with code style enforced during the build
-- Meziantou, SonarAnalyzer, Roslynator and StyleCop analyzers in every project (see [docs/code-quality.md](docs/code-quality.md))
+- Meziantou, SonarAnalyzer and Roslynator analyzers in every project (see [docs/code-quality.md](docs/code-quality.md))
 - Warnings treated as errors. Low/moderate NuGet vulnerability advisories (NU1901/NU1902) stay as warnings.
 - Deterministic builds. `ContinuousIntegrationBuild` is turned on automatically when `CI`, `GITHUB_ACTIONS` or `TF_BUILD` is set.
 

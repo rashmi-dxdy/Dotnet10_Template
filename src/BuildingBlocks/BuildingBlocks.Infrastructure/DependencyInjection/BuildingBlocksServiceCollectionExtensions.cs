@@ -1,12 +1,15 @@
+using BuildingBlocks.Abstractions.Time;
+using BuildingBlocks.Infrastructure.Time;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace BuildingBlocks.Infrastructure;
+namespace BuildingBlocks.Infrastructure.DependencyInjection;
 
 /// <summary>
 /// Registration entry point for shared technical infrastructure.
 /// </summary>
-public static class DependencyInjection
+public static class BuildingBlocksServiceCollectionExtensions
 {
     /// <summary>
     /// Registers shared technical services. Extension point: add cross-cutting plumbing here
@@ -21,6 +24,9 @@ public static class DependencyInjection
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
         return services;
     }

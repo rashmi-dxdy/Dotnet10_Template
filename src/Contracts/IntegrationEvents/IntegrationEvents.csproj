@@ -1,8 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Cross-service message contracts ONLY (plain, serializable records).
-    No project or package references, so the contracts can be versioned and shipped independently.
+    Cross-service message contracts ONLY (plain, serializable records implementing IIntegrationEvent).
+    May reference only BuildingBlocks.Abstractions, which itself has no dependencies, so the
+    contracts stay free of any transport or persistence technology.
   -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.Abstractions\BuildingBlocks.Abstractions.csproj" />
+  </ItemGroup>
 
 </Project>
