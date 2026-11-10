@@ -11,7 +11,10 @@ public sealed class ValidationBehaviorTests
     {
         var behavior = new ValidationBehavior<TestCommand, int>([]);
 
-        var result = await behavior.Handle(new TestCommand(string.Empty, 0), _ => Task.FromResult(42), TestContext.Current.CancellationToken);
+        var result = await behavior.Handle(
+            new TestCommand(string.Empty, 0),
+            _ => Task.FromResult(42),
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(42, result);
     }
@@ -21,7 +24,10 @@ public sealed class ValidationBehaviorTests
     {
         var behavior = new ValidationBehavior<TestCommand, int>([new TestCommandValidator()]);
 
-        var result = await behavior.Handle(new TestCommand("name", 1), _ => Task.FromResult(42), TestContext.Current.CancellationToken);
+        var result = await behavior.Handle(
+            new TestCommand("name", 1),
+            _ => Task.FromResult(42),
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(42, result);
     }
@@ -51,7 +57,8 @@ public sealed class ValidationBehaviorTests
     [Fact]
     public async Task Handle_CombinesFailuresFromAllValidators()
     {
-        var behavior = new ValidationBehavior<TestCommand, int>([new TestCommandValidator(), new TestCommandValidator()]);
+        var behavior = new ValidationBehavior<TestCommand, int>(
+            [new TestCommandValidator(), new TestCommandValidator()]);
 
         var exception = await Assert.ThrowsAsync<ValidationException>(() => behavior.Handle(
             new TestCommand(string.Empty, 1),

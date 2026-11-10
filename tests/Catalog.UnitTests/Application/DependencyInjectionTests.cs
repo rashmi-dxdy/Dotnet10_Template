@@ -1,7 +1,7 @@
 using BuildingBlocks.Application.Behaviors;
+using Catalog.Application.DependencyInjection;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Catalog.Application.DependencyInjection;
 
 namespace Catalog.UnitTests.Application;
 
@@ -35,11 +35,12 @@ public sealed class DependencyInjectionTests
 
         services.AddCatalogApplication();
 
-        Assert.Contains(
-            services,
-            d => d.ServiceType == typeof(IPipelineBehavior<,>) && d.ImplementationType == typeof(LoggingBehavior<,>));
-        Assert.Contains(
-            services,
-            d => d.ServiceType == typeof(IPipelineBehavior<,>) && d.ImplementationType == typeof(ValidationBehavior<,>));
+        var behaviors = services
+            .Where(d => d.ServiceType == typeof(IPipelineBehavior<,>))
+            .Select(d => d.ImplementationType)
+            .ToList();
+
+        Assert.Contains(typeof(LoggingBehavior<,>), behaviors);
+        Assert.Contains(typeof(ValidationBehavior<,>), behaviors);
     }
 }

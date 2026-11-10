@@ -35,11 +35,12 @@ public sealed class DependencyInjectionTests
 
         services.AddNotificationsApplication();
 
-        Assert.Contains(
-            services,
-            d => d.ServiceType == typeof(IPipelineBehavior<,>) && d.ImplementationType == typeof(LoggingBehavior<,>));
-        Assert.Contains(
-            services,
-            d => d.ServiceType == typeof(IPipelineBehavior<,>) && d.ImplementationType == typeof(ValidationBehavior<,>));
+        var behaviors = services
+            .Where(d => d.ServiceType == typeof(IPipelineBehavior<,>))
+            .Select(d => d.ImplementationType)
+            .ToList();
+
+        Assert.Contains(typeof(LoggingBehavior<,>), behaviors);
+        Assert.Contains(typeof(ValidationBehavior<,>), behaviors);
     }
 }

@@ -11,6 +11,14 @@ indent_style = space
 indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
+# Default line length for every file type.
+#   C#: enforced in the build by RCS0056 and auto-wrapped by `scripts/format.*` and by the Ctrl+. fix in
+#       Visual Studio, Rider and VS Code (see the Roslynator section below).
+#   Rider / ReSharper also use max_line_length for their visual guide and when reformatting.
+max_line_length = 120
+# Vertical guide at column 120 in Visual Studio. VS has no built-in guide, so this needs the free
+# "Editor Guidelines" extension; other tools ignore the key.
+guidelines = 120
 
 [*.md]
 trim_trailing_whitespace = false
@@ -30,7 +38,7 @@ end_of_line = crlf
 [*.cs]
 
 #### Layout ####
-max_line_length = 120
+# max_line_length is inherited from [*] (120).
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
 csharp_using_directive_placement = outside_namespace:warning
@@ -263,6 +271,13 @@ dotnet_diagnostic.MA0007.severity = warning
 # File name must match type name: off by team decision - small related types (enums, records)
 # may live next to the type that uses them.
 dotnet_diagnostic.MA0048.severity = none
+
+#### Roslynator.Formatting.Analyzers ####
+# Line too long: the only build-time line-length check (dotnet format does not wrap, and Sonar's S103
+# is not in the NuGet analyzer). It has a code fix, so `dotnet format` (scripts/format.*) wraps long lines
+# automatically, and so does Ctrl+. > "Fix all" in any IDE. Keep the limit in sync with max_line_length in [*].
+dotnet_diagnostic.RCS0056.severity = warning
+roslynator_max_line_length = 120
 
 #### SonarAnalyzer.CSharp ####
 # TODO comments: keep visible in the IDE, but don't fail the build for them.

@@ -13,6 +13,7 @@ No project file needs to opt in.
 | [Meziantou.Analyzer](https://github.com/meziantou/Meziantou.Analyzer) | 3.0.321 | `MAxxxx` | API usage pitfalls (string comparison, culture, etc.) |
 | [SonarAnalyzer.CSharp](https://rules.sonarsource.com/csharp/) | 10.35.0.4138 | `Sxxxx` | Bugs, code smells, security hotspots |
 | [Roslynator.Analyzers](https://josefpihrt.github.io/docs/roslynator/analyzers) | 5.0.1 | `RCSxxxx` | Refactoring hints (default severities, mostly IDE-only) |
+| [Roslynator.Formatting.Analyzers](https://josefpihrt.github.io/docs/roslynator/analyzers) | 5.0.1 | `RCS0xxx` | Formatting. Only `RCS0056` (line length) is enabled |
 | `dotnet format` | SDK | `WHITESPACE`, `IMPORTS` | Whitespace, indentation, using order |
 
 | File | Purpose |
@@ -32,7 +33,33 @@ building a file full of deliberate violations, so the list reflects real duplica
   live next to the type that uses them.
 - **Documentation comments** are optional (`CS1591` off). Doc comments that *are* written are still checked.
 
-No rule is suppressed with a blanket `NoWarn`.
+### Line length
+
+The default maximum line length is **120 characters** for every file type (`max_line_length` under `[*]`
+in `.editorconfig`).
+
+In C# files the limit is enforced in the build by `RCS0056` (`roslynator_max_line_length = 120`), from
+`Roslynator.Formatting.Analyzers`. The SDK analyzers don't check line length, and Sonar's `S103` is not in
+the NuGet analyzer. `RCS0056` has a code fix, so long lines are **wrapped automatically**:
+
+| Where | How |
+|---|---|
+| CLI / CI | `./scripts/format.sh` or `./scripts/format.ps1` (`dotnet format` applies the fix across the solution) |
+| Visual Studio | Click the `RCS0056` squiggle, press `Ctrl+.`, choose the wrap fix, then *Fix all occurrences in* Document / Project / Solution |
+| Rider | `Alt+Enter` on the warning, choose the wrap fix, then *Fix in file/project/solution*. *Reformat Code* also wraps to `max_line_length` |
+| VS Code (C# Dev Kit) | `Ctrl+.` on the warning |
+
+The fix wraps as little as needed to fit: before `=>`, one argument per line, or at a method-chain `.`.
+If the result reads badly (a long chain wrapped only once, for example), split it further by hand.
+
+The column guide:
+
+- **Rider** shows it from `max_line_length`, with no setup.
+- **Visual Studio** has no built-in guide. Install the free *Editor Guidelines* extension, which reads
+  `guidelines = 120` from `.editorconfig`.
+
+To change the limit, update `max_line_length`, `roslynator_max_line_length` **and** `guidelines`.
+
 
 ### Why StyleCop.Analyzers is not used
 
