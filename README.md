@@ -40,6 +40,7 @@ gets the same build rules, analyzers and package versions.
 
 - [docs/architecture.md](docs/architecture.md): DDD boundaries, CQRS, dependency rules, events, cross-service communication
 - [docs/code-quality.md](docs/code-quality.md): analyzers, formatting and how to fix violations
+- [docs/logging.md](docs/logging.md): Serilog structured logging, configuration layering, Docker overrides, secrets
 
 ## Getting started
 

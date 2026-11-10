@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared ASP.NET Core setup for HTTP APIs: correlation IDs, Serilog request logging, exception
+    logging and problem details. Builds on BuildingBlocks.Hosting. Only Api projects may reference this.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks.Hosting\BuildingBlocks.Hosting.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,27 +1,35 @@
+using BuildingBlocks.Hosting;
+using BuildingBlocks.Web.DependencyInjection;
 using Orders.Api.ExceptionHandling;
 using Orders.Application.DependencyInjection;
 using Orders.Infrastructure.DependencyInjection;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services
-    .AddOrdersApplication()
-    .AddOrdersInfrastructure(builder.Configuration);
-
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
-builder.Services.AddOpenApi();
-builder.Services.AddHealthChecks();
-
-var app = builder.Build();
-
-app.UseExceptionHandler();
-
-if (app.Environment.IsDevelopment())
+return await ServiceHost.RunAsync(async () =>
 {
-    app.MapOpenApi();
-}
+    var builder = WebApplication.CreateBuilder(args);
 
-app.MapHealthChecks("/health");
+    // Serilog structured logging, problem details and graceful shutdown (see docs/logging.md).
+    builder.AddWebServiceDefaults();
 
-await app.RunAsync();
+    builder.Services
+        .AddOrdersApplication()
+        .AddOrdersInfrastructure(builder.Configuration);
+
+    builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+    builder.Services.AddOpenApi();
+    builder.Services.AddHealthChecks();
+
+    await using var app = builder.Build();
+
+    // Correlation ID, request logging and exception handling - must come first.
+    app.UseWebServiceDefaults();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapOpenApi();
+    }
+
+    app.MapHealthChecks("/health");
+
+    await app.RunAsync();
+});

@@ -30,7 +30,9 @@ internal static class RepositoryProjects
     public const string SolutionFileName = "Dotnet10Template.slnx";
     public const string BuildingBlocksAbstractions = "BuildingBlocks.Abstractions";
     public const string BuildingBlocksApplication = "BuildingBlocks.Application";
+    public const string BuildingBlocksHosting = "BuildingBlocks.Hosting";
     public const string BuildingBlocksInfrastructure = "BuildingBlocks.Infrastructure";
+    public const string BuildingBlocksWeb = "BuildingBlocks.Web";
     public const string IntegrationEvents = "IntegrationEvents";
 
     private static readonly string[] ProjectFolders = ["src", "tests"];

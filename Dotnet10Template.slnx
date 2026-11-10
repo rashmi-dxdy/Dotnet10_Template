@@ -3,7 +3,9 @@
   <Folder Name="/src/BuildingBlocks/">
     <Project Path="src/BuildingBlocks/BuildingBlocks.Abstractions/BuildingBlocks.Abstractions.csproj" />
     <Project Path="src/BuildingBlocks/BuildingBlocks.Application/BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Hosting/BuildingBlocks.Hosting.csproj" />
     <Project Path="src/BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/BuildingBlocks.Web/BuildingBlocks.Web.csproj" />
   </Folder>
   <Folder Name="/src/Contracts/">
     <Project Path="src/Contracts/IntegrationEvents/IntegrationEvents.csproj" />

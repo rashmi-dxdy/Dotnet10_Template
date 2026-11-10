@@ -12,7 +12,9 @@ src/
   BuildingBlocks/
     BuildingBlocks.Abstractions     Technical contracts: IDomainEvent, IIntegrationEvent, IDateTimeProvider
     BuildingBlocks.Application      CQRS contracts on MediatR 12, logging + FluentValidation behaviors, AddCqrs()
+    BuildingBlocks.Hosting          Host setup for every Api/Worker: Serilog, log properties, redaction, shutdown logging
     BuildingBlocks.Infrastructure   Technical implementations shared by services (e.g. SystemDateTimeProvider)
+    BuildingBlocks.Web              HTTP API setup: correlation ID, request logging, exception handling, problem details
   Contracts/
     IntegrationEvents               Cross-service message contracts only
   Services/<Service>/
@@ -120,9 +122,12 @@ BuildingBlocks.Infrastructure ──► BuildingBlocks.Abstractions
 | `X.Domain` | `BuildingBlocks.Abstractions` only, no packages |
 | `X.Application` | own Domain, `BuildingBlocks.Abstractions`, `BuildingBlocks.Application`, `IntegrationEvents` |
 | `X.Infrastructure` | own Application and Domain, `BuildingBlocks.*`, `IntegrationEvents` |
-| `X.Api` / `X.Worker` | own Application and Infrastructure, `BuildingBlocks.*` |
+| `X.Api` | own Application and Infrastructure, `BuildingBlocks.*` |
+| `X.Worker` | own Application and Infrastructure, `BuildingBlocks.*` except `BuildingBlocks.Web` |
 | `BuildingBlocks.Abstractions` | nothing: no projects, no packages |
 | `BuildingBlocks.Application` | no projects; packages MediatR 12.x, FluentValidation and logging abstractions |
+| `BuildingBlocks.Hosting` | no projects; generic host and Serilog packages, no ASP.NET Core |
+| `BuildingBlocks.Web` | `BuildingBlocks.Hosting` only; ASP.NET Core and `Serilog.AspNetCore` |
 | `IntegrationEvents` | `BuildingBlocks.Abstractions` only, no packages |
 
 Examples of the inversion:

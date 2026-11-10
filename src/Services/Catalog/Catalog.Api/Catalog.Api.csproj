@@ -2,6 +2,11 @@
 
   <!-- Composition root for the Catalog service. -->
 
+  <PropertyGroup>
+    <!-- Development secrets: dotnet user-secrets, or right-click the project > Manage User Secrets (VS / Rider). -->
+    <UserSecretsId>dotnet10template-catalog-api</UserSecretsId>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>
@@ -9,6 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Catalog.Application\Catalog.Application.csproj" />
     <ProjectReference Include="..\Catalog.Infrastructure\Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks.Hosting\BuildingBlocks.Hosting.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks.Web\BuildingBlocks.Web.csproj" />
   </ItemGroup>
 
 </Project>

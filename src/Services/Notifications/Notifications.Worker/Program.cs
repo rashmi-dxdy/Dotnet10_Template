@@ -1,13 +1,21 @@
+using BuildingBlocks.Hosting;
+using BuildingBlocks.Hosting.DependencyInjection;
 using Notifications.Application.DependencyInjection;
 using Notifications.Infrastructure.DependencyInjection;
 
-var builder = Host.CreateApplicationBuilder(args);
+return await ServiceHost.RunAsync(async () =>
+{
+    var builder = Host.CreateApplicationBuilder(args);
 
-// Hosted services (BackgroundService implementations) are registered alongside the layers below.
-builder.Services
-    .AddNotificationsApplication()
-    .AddNotificationsInfrastructure(builder.Configuration);
+    // Serilog structured logging and graceful shutdown (see docs/logging.md).
+    builder.AddServiceDefaults();
 
-var host = builder.Build();
+    // Hosted services (BackgroundService implementations) are registered alongside the layers below.
+    builder.Services
+        .AddNotificationsApplication()
+        .AddNotificationsInfrastructure(builder.Configuration);
 
-await host.RunAsync();
+    using var host = builder.Build();
+
+    await host.RunAsync();
+});

@@ -96,6 +96,15 @@ public sealed class DependencyRuleTests
         Assert.StartsWith("12.", version, StringComparison.Ordinal);
     }
 
+    /// <summary>Shared host setup must not depend on any layer or service.</summary>
+    [Fact]
+    public void BuildingBlocksHosting_HasNoProjectReferences() =>
+        Assert.Empty(All[BuildingBlocksHosting].ProjectReferences);
+
+    [Fact]
+    public void BuildingBlocksWeb_ReferencesOnlyBuildingBlocksHosting() =>
+        Assert.All(All[BuildingBlocksWeb].ProjectReferences, r => Assert.Equal(BuildingBlocksHosting, r));
+
     [Fact]
     public void BuildingBlocksInfrastructure_ReferencesOnlyBuildingBlocksAbstractions() =>
         Assert.All(
@@ -129,15 +138,33 @@ public sealed class DependencyRuleTests
                 BuildingBlocksInfrastructure,
                 IntegrationEvents,
             ],
-            ProjectKind.Host =>
-            [
-                $"{s}.Application",
-                $"{s}.Infrastructure",
-                BuildingBlocksAbstractions,
-                BuildingBlocksApplication,
-                BuildingBlocksInfrastructure,
-            ],
+            ProjectKind.Host => HostReferences(project),
             _ => throw new InvalidOperationException($"{project.Name} is not a service project."),
         };
+    }
+
+    /// <summary>
+    /// Hosts may use the shared hosting setup. Only HTTP APIs may use BuildingBlocks.Web, so Workers don't
+    /// pull in ASP.NET Core.
+    /// </summary>
+    private static HashSet<string> HostReferences(ProjectInfo project)
+    {
+        var s = project.Service!;
+        HashSet<string> allowed =
+        [
+            $"{s}.Application",
+            $"{s}.Infrastructure",
+            BuildingBlocksAbstractions,
+            BuildingBlocksApplication,
+            BuildingBlocksHosting,
+            BuildingBlocksInfrastructure,
+        ];
+
+        if (project.Name.EndsWith(".Api", StringComparison.Ordinal))
+        {
+            allowed.Add(BuildingBlocksWeb);
+        }
+
+        return allowed;
     }
 }

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared host setup for every API and Worker: Serilog configured from application configuration,
+    standard log properties, sensitive-data redaction, shutdown logging and fatal-error handling.
+    Generic host only - NO ASP.NET Core here (see BuildingBlocks.Web), so Workers stay lightweight.
+    Only host projects (Api, Worker) may reference this.
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="Serilog.Enrichers.Thread" />
+    <PackageReference Include="Serilog.Expressions" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
+
+</Project>
