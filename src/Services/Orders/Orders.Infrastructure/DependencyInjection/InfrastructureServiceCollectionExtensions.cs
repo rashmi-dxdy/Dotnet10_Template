@@ -24,10 +24,11 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddBuildingBlocksInfrastructure(configuration);
         services.AddOrdersPersistence(configuration);
+        services.AddOrdersMessaging(configuration);
 
         // Extension points:
         //   Persistence/       -> entity configurations, migrations, repositories (DbContext: AddOrdersPersistence).
-        //   Messaging/         -> RabbitMQ/Kafka publishers, consumers and outbox.
+        //   Messaging/         -> message handlers and outbox (consumers: AddOrdersMessaging).
         //   ExternalServices/  -> HTTP and third-party clients.
         return services;
     }

@@ -123,6 +123,7 @@ BuildingBlocks.Infrastructure ──► BuildingBlocks.Abstractions
 | `X.Application` | own Domain, `BuildingBlocks.Abstractions`, `BuildingBlocks.Application`, `IntegrationEvents` |
 | `X.Infrastructure` | own Application and Domain, `BuildingBlocks.*`, `IntegrationEvents` |
 | EF Core / Npgsql runtime packages | `X.Infrastructure` and `BuildingBlocks.Infrastructure` only; EF Design/Tools in hosts only (design-time) |
+| Broker clients (`RabbitMQ.Client`, `Confluent.Kafka`) | `X.Infrastructure` and `BuildingBlocks.Infrastructure` only; Domain/Application use `IMessagePublisher` / `IMessageHandler<T>` |
 | `X.Api` | own Application and Infrastructure, `BuildingBlocks.*` |
 | `X.Worker` | own Application and Infrastructure, `BuildingBlocks.*` except `BuildingBlocks.Web` |
 | `BuildingBlocks.Abstractions` | nothing: no projects, no packages |
