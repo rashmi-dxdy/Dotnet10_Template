@@ -1,5 +1,6 @@
 using BuildingBlocks.Hosting;
 using BuildingBlocks.Web.DependencyInjection;
+using BuildingBlocks.Web.Health;
 using Orders.Api.ExceptionHandling;
 using Orders.Application.DependencyInjection;
 using Orders.Infrastructure.DependencyInjection;
@@ -17,7 +18,6 @@ return await ServiceHost.RunAsync(async () =>
 
     builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
     builder.Services.AddOpenApi();
-    builder.Services.AddHealthChecks();
 
     await using var app = builder.Build();
 
@@ -29,7 +29,8 @@ return await ServiceHost.RunAsync(async () =>
         app.MapOpenApi();
     }
 
-    app.MapHealthChecks("/health");
+    // /health/live (process up) and /health/ready (dependencies such as PostgreSQL reachable).
+    app.MapServiceHealthChecks();
 
     await app.RunAsync();
 });

@@ -122,6 +122,7 @@ BuildingBlocks.Infrastructure ──► BuildingBlocks.Abstractions
 | `X.Domain` | `BuildingBlocks.Abstractions` only, no packages |
 | `X.Application` | own Domain, `BuildingBlocks.Abstractions`, `BuildingBlocks.Application`, `IntegrationEvents` |
 | `X.Infrastructure` | own Application and Domain, `BuildingBlocks.*`, `IntegrationEvents` |
+| EF Core / Npgsql runtime packages | `X.Infrastructure` and `BuildingBlocks.Infrastructure` only; EF Design/Tools in hosts only (design-time) |
 | `X.Api` | own Application and Infrastructure, `BuildingBlocks.*` |
 | `X.Worker` | own Application and Infrastructure, `BuildingBlocks.*` except `BuildingBlocks.Web` |
 | `BuildingBlocks.Abstractions` | nothing: no projects, no packages |
@@ -188,7 +189,10 @@ contract.
 
 1. **No project references between services** **(enforced)**. A service never references another
    service's Domain, Application or Infrastructure.
-2. **No shared databases.** Each service reads and writes only its own database.
+2. **No shared tables.** Each service reads and writes only its own tables, through its own DbContext and
+   connection string **(enforced: one DbContext per service, declared only in its Infrastructure)**. For now
+   all services share one database, and every table carries its owner's prefix (`CAT_`, `ORD_`, `NTF_`)
+   **(enforced)**. Each service will move to its own database later. See [database.md](database.md).
 3. **Asynchronous first.** Services communicate through integration events from
    `src/Contracts/IntegrationEvents` over RabbitMQ or Kafka.
 4. **Contracts only.** `IntegrationEvents` contains message records and nothing else: no logic, no

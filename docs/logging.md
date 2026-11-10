@@ -102,7 +102,7 @@ using (LogContext.PushProperty(LogProperties.CorrelationId, message.CorrelationI
 
 1. **Correlation ID** (see above).
 2. **Request logging** (`UseSerilogRequestLogging`): one entry per request with method, path, status code,
-   duration, scheme, host and endpoint name. Level: `Error` for 5xx and exceptions, `Verbose` for `/health`
+   duration, scheme, host and endpoint name. Level: `Error` for 5xx and exceptions, `Verbose` for `/health/*`
    (hidden by default), `Information` otherwise. Query strings, headers and bodies are **not** logged.
 3. **Exception handling** (`UseExceptionHandler` + problem details): an unhandled exception is logged once
    at `Error` with its stack trace, correlation ID and trace ID. The client gets an RFC 9457 `500` response
@@ -162,7 +162,7 @@ Every setting can be overridden with an environment variable: replace `:` with `
 | `Serilog:MinimumLevel:Override:Microsoft.AspNetCore` | `Serilog__MinimumLevel__Override__Microsoft.AspNetCore=Information` |
 | `Serilog:Properties:Application` | `Serilog__Properties__Application=catalog-api` |
 | `HostOptions:ShutdownTimeout` | `HostOptions__ShutdownTimeout=00:00:20` |
-| `ConnectionStrings:Catalog` | `ConnectionStrings__Catalog=Host=postgres;...` |
+| `ConnectionStrings:CatalogDb` | `ConnectionStrings__CatalogDb=Host=postgres;...` |
 
 Example Docker Compose service (the compose file itself is added with the Docker infrastructure):
 
@@ -172,11 +172,11 @@ catalog-api:
     ASPNETCORE_ENVIRONMENT: Production          # JSON logs
     Serilog__MinimumLevel__Default: ${SERILOG_MINIMUM_LEVEL:-Information}
     HostOptions__ShutdownTimeout: "00:00:20"
-    ConnectionStrings__Catalog: "Host=postgres;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+    ConnectionStrings__CatalogDb: "Host=postgres;Database=${APP_DB_NAME};Username=${APP_DB_USER};Password=${APP_DB_PASSWORD}"
   stop_grace_period: 30s                        # longer than HostOptions:ShutdownTimeout
 ```
 
-Values such as `POSTGRES_PASSWORD` come from the git-ignored `.env` file (see `.env.example`), never from
+Values such as `APP_DB_PASSWORD` come from the git-ignored `.env` file (see `.env.example`), never from
 `appsettings*.json`.
 
 ## 8. Adding a new service

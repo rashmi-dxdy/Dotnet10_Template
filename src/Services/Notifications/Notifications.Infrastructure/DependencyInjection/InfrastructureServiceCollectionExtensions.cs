@@ -23,9 +23,10 @@ public static class InfrastructureServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddBuildingBlocksInfrastructure(configuration);
+        services.AddNotificationsPersistence(configuration);
 
         // Extension points:
-        //   Persistence/       -> DbContext (PostgreSQL) and repository implementations.
+        //   Persistence/       -> entity configurations, migrations, repositories (DbContext: AddNotificationsPersistence).
         //   Messaging/         -> RabbitMQ/Kafka publishers, consumers and outbox.
         //   ExternalServices/  -> HTTP and third-party clients.
         return services;

@@ -102,8 +102,10 @@ public sealed class DependencyRuleTests
         Assert.Empty(All[BuildingBlocksHosting].ProjectReferences);
 
     [Fact]
-    public void BuildingBlocksWeb_ReferencesOnlyBuildingBlocksHosting() =>
-        Assert.All(All[BuildingBlocksWeb].ProjectReferences, r => Assert.Equal(BuildingBlocksHosting, r));
+    public void BuildingBlocksWeb_ReferencesOnlyBuildingBlocksHostingAndAbstractions() =>
+        Assert.All(
+            All[BuildingBlocksWeb].ProjectReferences,
+            r => Assert.Contains(r, [BuildingBlocksAbstractions, BuildingBlocksHosting], StringComparer.Ordinal));
 
     [Fact]
     public void BuildingBlocksInfrastructure_ReferencesOnlyBuildingBlocksAbstractions() =>

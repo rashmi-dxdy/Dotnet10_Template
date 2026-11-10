@@ -32,6 +32,9 @@ public static class WebHostingExtensions
             }
         });
 
+        // Checks themselves are added by the layers that own them (e.g. PostgreSQL by Infrastructure).
+        builder.Services.AddHealthChecks();
+
         return builder;
     }
 

@@ -29,8 +29,11 @@
   <ItemGroup Label="Microsoft.Extensions">
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup Label="CQRS - MediatR">
@@ -51,8 +54,20 @@
   </ItemGroup>
 
   <ItemGroup Label="Data access - EF Core and PostgreSQL">
+    <!--
+      Runtime packages: Infrastructure projects only. Design/Tools: host projects only (design-time,
+      PrivateAssets=all). Both rules are enforced by Architecture.Tests - see docs/database.md.
+    -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
+    <!--
+      Transitive pin: the Npgsql provider only requires Relational >= 10.0.4, which would otherwise
+      resolve to an older Relational than EF Core itself.
+    -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.14" />
+    <!-- Package Manager Console commands (Add-Migration, Update-Database) in Visual Studio. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.14" />
+    <!-- License: PostgreSQL (permissive, MIT-like). -->
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
@@ -73,8 +88,11 @@
   </ItemGroup>
 
   <ItemGroup Label="Health checks">
-    <!-- No 10.x release yet; 9.0.0 targets net8.0+ and runs on .NET 10. -->
-    <PackageVersion Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <!--
+      No 10.x release yet; 9.0.0 targets net8.0+ and runs on .NET 10.
+      PostgreSQL is NOT checked with AspNetCore.HealthChecks.NpgSql: BuildingBlocks.Infrastructure has its
+      own check that reuses the service's validated connection string (see docs/database.md).
+    -->
     <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.Kafka" Version="9.0.0" />
   </ItemGroup>

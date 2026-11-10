@@ -3,11 +3,18 @@
   <!--
     Shared technical infrastructure (e.g. logging, messaging and persistence plumbing) implementing
     BuildingBlocks.Abstractions. No business logic and no references to any service.
+    Persistence: generic EF Core + PostgreSQL registration only. NEVER a shared DbContext - every
+    service defines and owns its own (see docs/database.md).
   -->
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
   <ItemGroup>

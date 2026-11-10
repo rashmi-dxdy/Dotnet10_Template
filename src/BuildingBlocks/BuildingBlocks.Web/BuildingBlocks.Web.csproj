@@ -2,7 +2,8 @@
 
   <!--
     Shared ASP.NET Core setup for HTTP APIs: correlation IDs, Serilog request logging, exception
-    logging and problem details. Builds on BuildingBlocks.Hosting. Only Api projects may reference this.
+    logging, problem details and health endpoints. Builds on BuildingBlocks.Hosting. Only Api projects
+    may reference this.
   -->
 
   <ItemGroup>
@@ -14,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks.Abstractions\BuildingBlocks.Abstractions.csproj" />
     <ProjectReference Include="..\BuildingBlocks.Hosting\BuildingBlocks.Hosting.csproj" />
   </ItemGroup>
 
