@@ -31,9 +31,9 @@ public sealed class MessagingRuleTests
             + "Infrastructure; use IMessagePublisher / IMessageHandler<T> from BuildingBlocks.Abstractions.Messaging.");
     }
 
-    /// <summary>Domain and Application code must not use the RabbitMQ client API, even transitively.</summary>
+    /// <summary>Domain and Application code must not use a broker client API (RabbitMQ, Kafka), even transitively.</summary>
     [Fact]
-    public void DomainAndApplicationSources_DoNotUseRabbitMqClient()
+    public void DomainAndApplicationSources_DoNotUseBrokerClients()
     {
         var violations = All.Values
             .Where(p => p.Kind is ProjectKind.Domain or ProjectKind.Application
@@ -46,7 +46,9 @@ public sealed class MessagingRuleTests
             .Where(path => !path.Contains(
                 $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
                 StringComparison.Ordinal))
-            .Where(path => File.ReadAllText(path).Contains("using RabbitMQ", StringComparison.Ordinal))
+            .Where(path => File.ReadAllText(path) is var source
+                && (source.Contains("using RabbitMQ", StringComparison.Ordinal)
+                    || source.Contains("using Confluent", StringComparison.Ordinal)))
             .Select(path => Path.GetRelativePath(Root, path))
             .ToList();
 

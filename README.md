@@ -43,6 +43,7 @@ gets the same build rules, analyzers and package versions.
 - [docs/logging.md](docs/logging.md): Serilog structured logging, configuration layering, Docker overrides, secrets
 - [docs/database.md](docs/database.md): EF Core + PostgreSQL, shared database with per-service table prefixes, connection strings, health checks, migrations
 - [docs/messaging.md](docs/messaging.md): RabbitMQ publishing and consuming, ack/nack/requeue, dead-lettering, reconnection, smoke tests
+- [docs/streaming.md](docs/streaming.md): Kafka producing and consuming, topics, consumer groups, offsets, dead-letter topics, smoke tests
 
 ## Getting started
 

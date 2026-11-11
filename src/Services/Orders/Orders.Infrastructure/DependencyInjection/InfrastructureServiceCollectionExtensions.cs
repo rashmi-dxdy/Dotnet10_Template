@@ -25,10 +25,11 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBuildingBlocksInfrastructure(configuration);
         services.AddOrdersPersistence(configuration);
         services.AddOrdersMessaging(configuration);
+        services.AddOrdersStreaming(configuration);
 
         // Extension points:
         //   Persistence/       -> entity configurations, migrations, repositories (DbContext: AddOrdersPersistence).
-        //   Messaging/         -> message handlers and outbox (consumers: AddOrdersMessaging).
+        //   Messaging/         -> message handlers and outbox (consumers: AddOrdersMessaging, AddOrdersStreaming).
         //   ExternalServices/  -> HTTP and third-party clients.
         return services;
     }

@@ -25,10 +25,11 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBuildingBlocksInfrastructure(configuration);
         services.AddCatalogPersistence(configuration);
         services.AddCatalogMessaging(configuration);
+        services.AddCatalogStreaming(configuration);
 
         // Extension points:
         //   Persistence/       -> entity configurations, migrations, repositories (DbContext: AddCatalogPersistence).
-        //   Messaging/         -> message handlers and outbox (consumers: AddCatalogMessaging).
+        //   Messaging/         -> message handlers and outbox (consumers: AddCatalogMessaging, AddCatalogStreaming).
         //   ExternalServices/  -> HTTP and third-party clients.
         return services;
     }

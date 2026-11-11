@@ -4,11 +4,13 @@
     Shared technical infrastructure (e.g. logging, messaging and persistence plumbing) implementing
     BuildingBlocks.Abstractions. No business logic and no references to any service.
     Messaging: the RabbitMQ adapter behind BuildingBlocks.Abstractions.Messaging (RabbitMQ.Client stays here).
+    Streaming: the Kafka adapter behind BuildingBlocks.Abstractions.Streaming (Confluent.Kafka stays here).
     Persistence: generic EF Core + PostgreSQL registration only. NEVER a shared DbContext - every
     service defines and owns its own (see docs/database.md).
   -->
 
   <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

@@ -25,10 +25,11 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBuildingBlocksInfrastructure(configuration);
         services.AddNotificationsPersistence(configuration);
         services.AddNotificationsMessaging(configuration);
+        services.AddNotificationsStreaming(configuration);
 
         // Extension points:
         //   Persistence/       -> entity configurations, migrations, repositories (DbContext: AddNotificationsPersistence).
-        //   Messaging/         -> message handlers and outbox (consumers: AddNotificationsMessaging).
+        //   Messaging/         -> message handlers and outbox (consumers: AddNotificationsMessaging, AddNotificationsStreaming).
         //   ExternalServices/  -> HTTP and third-party clients.
         return services;
     }
