@@ -507,8 +507,7 @@ secrets.json
 *.key
 *.pem
 
-# Docker
-docker-compose.override.yml
+# Docker (docker-compose.override.yml is committed: it holds the dev bind mounts, no secrets)
 compose.override.yml
 .docker-data/
 

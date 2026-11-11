@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+#
+# DEVELOPMENT image for the modular monolith host (src/Host/Host.Api): Catalog, Orders and Notifications in
+# one process. NOT for production: it ships the full .NET SDK and runs `dotnet watch` against the source that
+# docker-compose.override.yml bind-mounts at /workspace. Only the entrypoint script is copied into the image, so
+# changing a .cs (or .csproj) file never needs an image rebuild; dotnet watch picks it up.
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+ENV \
+    # Docker Desktop (Windows/macOS) does not forward host file-change events (inotify) into bind mounts,
+    # so dotnet watch must poll the files instead.
+    DOTNET_USE_POLLING_FILE_WATCHER=true \
+    # Restart the app instead of prompting when a change cannot be hot-reloaded (no console to answer).
+    DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true \
+    DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true \
+    DOTNET_NOLOGO=true \
+    DOTNET_CLI_TELEMETRY_OPTOUT=true \
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true \
+    # Restored packages go to a named volume (nuget_cache), so they survive container re-creation.
+    NUGET_PACKAGES=/root/.nuget/packages \
+    # bin/ and obj/ go here instead of next to the bind-mounted sources (see Directory.Build.props). The
+    # host's Windows/macOS build output and the container's Linux build output must not overwrite each other.
+    CONTAINER_BUILD_ROOT=/build \
+    # Listen on all interfaces inside the container; compose publishes the port to the host.
+    ASPNETCORE_URLS=http://+:8080 \
+    # The base image sets ASPNETCORE_HTTP_PORTS=8080; clear it so Kestrel does not warn about two settings.
+    ASPNETCORE_HTTP_PORTS=
+
+WORKDIR /workspace
+
+EXPOSE 8080
+
+# Runs `dotnet watch --project src/Host/Host.Api/Host.Api.csproj run --no-launch-profile`, plus a graceful
+# shutdown on `docker compose stop` that dotnet watch does not provide on its own (see the script).
+COPY --chmod=755 docker/watch.sh /usr/local/bin/watch.sh
+ENTRYPOINT ["/usr/local/bin/watch.sh"]

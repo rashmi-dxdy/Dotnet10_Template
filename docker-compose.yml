@@ -1,0 +1,160 @@
+# Local DEVELOPMENT environment: the modular monolith (one app container running Catalog, Orders and
+# Notifications) plus PostgreSQL, RabbitMQ and Kafka.
+#
+#   cp .env.example .env      # once; fill in the values
+#   docker compose up --build
+#
+# docker-compose.override.yml (loaded automatically) bind-mounts the source for `dotnet watch`.
+# Every credential comes from the git-ignored .env file; this file contains none. See README.md, "Docker".
+#
+# Only what a developer needs is published to the host, and only on 127.0.0.1: the app, the RabbitMQ
+# management UI and Kafka's EXTERNAL listener. Containers reach each other through Docker DNS by service name.
+
+name: dotnet10template
+
+# One shared database for now; each module keeps its own connection string (docs/database.md).
+x-app-db: &app-db "Host=postgres;Port=5432;Database=${APP_DB_NAME:?set APP_DB_NAME in .env};Username=${APP_DB_USER:?set APP_DB_USER in .env};Password=${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    image: dotnet10template-app:dev
+    # Forwards SIGTERM to dotnet watch and reaps child processes, so `docker compose stop` shuts down cleanly.
+    init: true
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
+      HostOptions__ShutdownTimeout: "00:00:30"
+      Serilog__MinimumLevel__Default: ${SERILOG_MINIMUM_LEVEL:-Information}
+
+      ConnectionStrings__CatalogDb: *app-db
+      ConnectionStrings__OrdersDb: *app-db
+      ConnectionStrings__NotificationsDb: *app-db
+
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__Username: ${RABBITMQ_USER:?set RABBITMQ_USER in .env}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in .env}
+
+      Kafka__BootstrapServers: kafka:9092
+      Kafka__SecurityProtocol: Plaintext
+      Kafka__BrokerAddressFamily: V4
+      Kafka__ProvisionTopics: "true"
+
+      # Stable key for the internal module APIs. Empty = a random key per process (fine while every module runs
+      # in this one container). Required once a module is extracted to another container (docs/modules.md).
+      InternalApi__ApiKey: ${INTERNAL_API_KEY:-}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--output", "/dev/null", "http://localhost:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # The first start restores every package (into nuget_cache) and builds the whole solution graph, which
+      # took about 4 minutes on a fresh cache. Later starts take well under a minute.
+      start_period: 300s
+    # Longer than HostOptions__ShutdownTimeout, so Docker does not kill the app while it drains.
+    stop_grace_period: 40s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      # Server administrator: used only by init.sh to create the app database and login.
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Read by docker/postgres/init.sh.
+      APP_DB_NAME: ${APP_DB_NAME:?set APP_DB_NAME in .env}
+      APP_DB_USER: ${APP_DB_USER:?set APP_DB_USER in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    # 5432 is NOT published: only containers on this network reach PostgreSQL.
+    healthcheck:
+      # Over TCP on purpose: during first-start initialisation the server listens on the Unix socket only, so
+      # this stays unhealthy until init.sh has finished and the real server is up.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${APP_DB_USER}\" -d \"$${APP_DB_NAME}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    # RabbitMQ stores its data per node name (rabbit@<hostname>). A fixed hostname keeps the data in the volume
+    # usable when the container is re-created.
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?set RABBITMQ_USER in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in .env}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      # Management UI only. AMQP (5672) is NOT published: only containers on this network reach it.
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  kafka:
+    image: apache/kafka:3.9.0
+    hostname: kafka
+    environment:
+      # Single broker in KRaft mode (no ZooKeeper): this node is both broker and controller.
+      # The cluster ID is written into the data volume on first start and must never change afterwards.
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?set KAFKA_CLUSTER_ID in .env (see .env.example)}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # INTERNAL: other containers (kafka:9092). EXTERNAL: tools on the host machine (localhost:9094).
+      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:9094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # A single broker cannot replicate internal topics.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      # EXTERNAL listener only. 9092 (INTERNAL) and 9093 (CONTROLLER) are NOT published.
+      - "127.0.0.1:${KAFKA_EXTERNAL_PORT:-9094}:9094"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 15s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+# Named volumes survive `docker compose down` and restarts. Only `docker compose down -v` (or
+# `docker volume rm`) deletes them; see README.md for resetting data on purpose.
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  kafka_data:

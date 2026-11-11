@@ -232,6 +232,9 @@ tests are **skipped**.
 docker run -d --name kafka-dev -p 127.0.0.1:9092:9092 apache/kafka:4.4.0     # single-node KRaft
 ```
 
+Or use the Docker Compose broker (`docker compose up -d kafka`, README "Docker") through its EXTERNAL listener:
+`Kafka__BootstrapServers=localhost:9094`.
+
 ```powershell
 $env:Kafka__BootstrapServers = 'localhost:9092'; $env:Kafka__BrokerAddressFamily = 'V4'
 dotnet test --project tests/BuildingBlocks.IntegrationTests

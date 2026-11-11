@@ -37,6 +37,20 @@
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 
+  <!--
+    Docker development container only (docker/Dockerfile.dev sets CONTAINER_BUILD_ROOT). The repository is
+    bind-mounted from the developer's machine, so bin/ and obj/ go to a container-only folder instead.
+    Otherwise the Linux restore would overwrite the host's obj/project.assets.json (and the reverse), breaking
+    builds in Visual Studio and Rider. The host's own bin/ and obj/ folders are excluded from the items, because
+    the default exclusions now point at the container folder.
+    Not set anywhere else, so local, IDE and CI builds are unaffected.
+  -->
+  <PropertyGroup Label="Docker dev container" Condition="'$(CONTAINER_BUILD_ROOT)' != ''">
+    <BaseIntermediateOutputPath>$(CONTAINER_BUILD_ROOT)/$(MSBuildProjectName)/obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(CONTAINER_BUILD_ROOT)/$(MSBuildProjectName)/bin/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+
   <!-- CI-only: normalise source paths in PDBs and enable deterministic CI behaviour. -->
   <PropertyGroup Label="CI" Condition="'$(CI)' == 'true' or '$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>

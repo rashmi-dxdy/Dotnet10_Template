@@ -170,7 +170,8 @@ Every setting can be overridden with an environment variable: replace `:` with `
 | `HostOptions:ShutdownTimeout` | `HostOptions__ShutdownTimeout=00:00:20` |
 | `ConnectionStrings:CatalogDb` | `ConnectionStrings__CatalogDb=Host=postgres;...` |
 
-Example Docker Compose service (the compose file itself is added with the Docker infrastructure):
+Example Docker Compose service (simplified; the real development setup is `docker-compose.yml`, which keeps
+`Development` and runs with `stop_grace_period: 40s`):
 
 ```yaml
 app:            # Host.Api

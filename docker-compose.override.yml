@@ -1,0 +1,16 @@
+# Development additions, loaded automatically by `docker compose` together with docker-compose.yml.
+#
+# The whole repository is mounted at /workspace: Host.Api references the modules and building blocks across
+# src/, so the app needs the entire source tree. `dotnet watch` (docker/Dockerfile.dev) sees every saved file;
+# no image rebuild is needed for code changes. Build output stays inside the container (/build), so the host's
+# bin/ and obj/ folders (Visual Studio, Rider) are never overwritten by the Linux build.
+
+services:
+  app:
+    volumes:
+      - .:/workspace
+      - nuget_cache:/root/.nuget/packages
+
+volumes:
+  # Restored NuGet packages, kept across container re-creation so a fresh start does not download them again.
+  nuget_cache:
