@@ -3,7 +3,7 @@ using static Architecture.Tests.RepositoryProjects;
 namespace Architecture.Tests;
 
 /// <summary>
-/// Enforces the DDD/CQRS folder conventions in every service layer project.
+/// Enforces the DDD/CQRS folder conventions in every module layer project.
 /// See docs/architecture.md.
 /// </summary>
 public sealed class FolderConventionTests
@@ -14,10 +14,11 @@ public sealed class FolderConventionTests
         [ProjectKind.Application] =
             ["Abstractions", "Behaviors", "Commands", "DependencyInjection", "Queries", "Validators"],
         [ProjectKind.Infrastructure] = ["DependencyInjection", "ExternalServices", "Messaging", "Persistence"],
+        [ProjectKind.Api] = ["Endpoints"],
     };
 
     public static TheoryData<string> LayerProjectNames =>
-        new(RepositoryProjects.ServiceProjects
+        new(RepositoryProjects.ModuleProjects
             .Where(p => RequiredFolders.ContainsKey(p.Kind))
             .Select(p => p.Name)
             .Order(StringComparer.Ordinal));
@@ -27,7 +28,7 @@ public sealed class FolderConventionTests
     public void LayerProject_HasConventionFolders(string projectName)
     {
         var project = All[projectName];
-        var projectDirectory = Path.GetDirectoryName(Path.Combine(Root, project.RelativePath))!;
+        var projectDirectory = project.Directory;
 
         var missing = RequiredFolders[project.Kind]
             .Where(folder => !Directory.Exists(Path.Combine(projectDirectory, folder)))

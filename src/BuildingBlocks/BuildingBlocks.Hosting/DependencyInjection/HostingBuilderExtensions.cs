@@ -34,7 +34,7 @@ public static class HostingBuilderExtensions
     /// <summary>
     /// Replaces the default logging providers with Serilog. Levels, sinks and output format are read from the
     /// <c>Serilog</c> configuration section. The standard properties (<see cref="LogProperties"/>, machine
-    /// name, thread ID, log context) and sensitive-data redaction are always added in code, so no service
+    /// name, thread ID, log context) and sensitive-data redaction are always added in code, so no host
     /// can drop them by accident.
     /// </summary>
     /// <param name="builder">The host application builder.</param>

@@ -2,11 +2,12 @@
 
   <!--
     Shared technical infrastructure (e.g. logging, messaging and persistence plumbing) implementing
-    BuildingBlocks.Abstractions. No business logic and no references to any service.
+    BuildingBlocks.Abstractions. No business logic and no references to any module.
     Messaging: the RabbitMQ adapter behind BuildingBlocks.Abstractions.Messaging (RabbitMQ.Client stays here).
     Streaming: the Kafka adapter behind BuildingBlocks.Abstractions.Streaming (Confluent.Kafka stays here).
+    Modules: HTTP clients for calling another module's internal API (AddModuleClient).
     Persistence: generic EF Core + PostgreSQL registration only. NEVER a shared DbContext - every
-    service defines and owns its own (see docs/database.md).
+    module defines and owns its own (see docs/database.md).
   -->
 
   <ItemGroup>
@@ -16,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="RabbitMQ.Client" />

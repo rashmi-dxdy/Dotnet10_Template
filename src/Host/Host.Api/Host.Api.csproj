@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The one deployable application: composes every module (src/Modules/<Module>/<Module>.Api) into a
+    single process. Which modules run in a given deployment is configuration (Modules:<Name>:Enabled),
+    so the same build runs as the modular monolith or as one extracted module. See docs/modules.md.
+    References ONLY module Api projects and BuildingBlocks.Hosting/Web (enforced by Architecture.Tests).
+  -->
+
+  <PropertyGroup>
+    <!-- Development secrets: dotnet user-secrets, or right-click the project > Manage User Secrets (VS / Rider). -->
+    <UserSecretsId>dotnet10template-host</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup Label="EF Core design-time (migrations) - never shipped as a runtime dependency">
+    <!--
+      The startup project for every module's migrations. dotnet ef (CLI, Rider) needs Design here;
+      the Visual Studio Package Manager Console needs Tools. See docs/database.md.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Label="Modules">
+    <ProjectReference Include="..\..\Modules\Catalog\Catalog.Api\Catalog.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\Notifications.Api\Notifications.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Orders\Orders.Api\Orders.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.Hosting\BuildingBlocks.Hosting.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\BuildingBlocks.Web\BuildingBlocks.Web.csproj" />
+  </ItemGroup>
+
+</Project>

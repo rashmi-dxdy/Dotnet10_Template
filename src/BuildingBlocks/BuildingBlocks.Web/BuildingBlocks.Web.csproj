@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Shared ASP.NET Core setup for HTTP APIs: correlation IDs, Serilog request logging, exception
-    logging, problem details and health endpoints. Builds on BuildingBlocks.Hosting. Only Api projects
-    may reference this.
+    Shared ASP.NET Core setup for the host: correlation IDs, Serilog request logging, exception
+    logging, problem details (incl. FluentValidation failures), health endpoints, and module
+    composition (IModule, AddModules/MapModules, the internal API key check). Builds on
+    BuildingBlocks.Hosting. Only the host and module Api projects may reference this.
   -->
 
   <ItemGroup>
@@ -11,12 +12,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BuildingBlocks.Abstractions\BuildingBlocks.Abstractions.csproj" />
     <ProjectReference Include="..\BuildingBlocks.Hosting\BuildingBlocks.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="BuildingBlocks.UnitTests" />
+    <InternalsVisibleTo Include="BuildingBlocks.IntegrationTests" />
   </ItemGroup>
 
 </Project>

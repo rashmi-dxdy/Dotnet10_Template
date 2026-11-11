@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace BuildingBlocks.Infrastructure.Streaming.Kafka;
 
 /// <summary>
-/// <see cref="IEventStreamProducer"/> for Kafka. ONE producer per service (thread-safe, keeps its broker
+/// <see cref="IEventStreamProducer"/> for Kafka. ONE producer per process (thread-safe, keeps its broker
 /// connections), configured for reliability: <c>acks=all</c>, idempotence (no duplicates or reordering from
 /// client retries), automatic retries until <c>Producer:MessageTimeoutMs</c>. Flushed on shutdown.
 /// </summary>

@@ -5,8 +5,8 @@ namespace BuildingBlocks.Infrastructure.Persistence;
 
 /// <summary>
 /// Per-service table prefixes. All services currently share ONE database, so every table name starts with
-/// its owning service's prefix (e.g. <c>CAT_Products</c>, <c>ORD_Orders</c>). The prefix marks ownership and
-/// lets each service's tables move to a separate database later without renaming anything.
+/// its owning module's prefix (e.g. <c>CAT_Products</c>, <c>ORD_Orders</c>). The prefix marks ownership and
+/// lets each module's tables move to a separate database later without renaming anything.
 /// </summary>
 public static partial class TablePrefix
 {
@@ -17,7 +17,7 @@ public static partial class TablePrefix
     /// configurations, so explicit <c>ToTable("...")</c> names are prefixed too.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
-    /// <param name="prefix">The service prefix, e.g. <c>CAT_</c>.</param>
+    /// <param name="prefix">The module prefix, e.g. <c>CAT_</c>.</param>
     /// <returns>The same model builder, for chaining.</returns>
     public static ModelBuilder ApplyTablePrefix(this ModelBuilder modelBuilder, string prefix)
     {
@@ -40,7 +40,7 @@ public static partial class TablePrefix
     /// The service's own EF Core migrations history table, e.g. <c>CAT_EFMigrationsHistory</c>, so services
     /// sharing a database never mix their migration records.
     /// </summary>
-    /// <param name="prefix">The service prefix, e.g. <c>CAT_</c>.</param>
+    /// <param name="prefix">The module prefix, e.g. <c>CAT_</c>.</param>
     /// <returns>The history table name.</returns>
     public static string MigrationsHistoryTable(string prefix)
     {

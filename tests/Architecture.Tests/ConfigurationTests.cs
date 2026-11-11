@@ -5,8 +5,8 @@ using static Architecture.Tests.RepositoryProjects;
 namespace Architecture.Tests;
 
 /// <summary>
-/// Keeps the configuration of every host (Api, Worker) consistent and free of secrets.
-/// See docs/logging.md.
+/// Keeps the host configuration complete for every module, consistent and free of secrets.
+/// See docs/logging.md and docs/modules.md.
 /// </summary>
 public sealed class ConfigurationTests
 {
@@ -77,6 +77,29 @@ public sealed class ConfigurationTests
         Assert.True(leaks.Count == 0, $"{hostName} commits secret values at: {string.Join(", ", leaks)}.");
     }
 
+    /// <summary>
+    /// The host runs every module, so its base settings must say where each module runs (<c>Modules:&lt;Module&gt;</c>)
+    /// and name each module's connection string, even while all of them point at one shared database.
+    /// </summary>
+    [Fact]
+    public void HostSettings_ConfigureEveryModule()
+    {
+        var host = Assert.Single(OfKind(ProjectKind.Host)).Name;
+        var settings = Load(host, "appsettings.json");
+
+        var missing = Modules
+            .SelectMany(m => new[]
+            {
+                settings["Modules"]?[m]?["Enabled"] is null ? $"Modules:{m}:Enabled" : null,
+                settings["Modules"]?[m]?["BaseAddress"] is null ? $"Modules:{m}:BaseAddress" : null,
+                settings["ConnectionStrings"]?[$"{m}Db"] is null ? $"ConnectionStrings:{m}Db" : null,
+            })
+            .OfType<string>()
+            .ToList();
+
+        Assert.True(missing.Count == 0, $"{host}/appsettings.json is missing: {string.Join(", ", missing)}.");
+    }
+
     private static bool IsSecretKey(string path) =>
         SecretKeyParts.Any(part => path.Contains(part, StringComparison.OrdinalIgnoreCase));
 
@@ -96,7 +119,6 @@ public sealed class ConfigurationTests
 
     private static string SettingsPath(string hostName, string fileName)
     {
-        var projectDirectory = Path.GetDirectoryName(Path.Combine(Root, All[hostName].RelativePath))!;
-        return Path.Combine(projectDirectory, fileName);
+        return Path.Combine(All[hostName].Directory, fileName);
     }
 }

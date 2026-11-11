@@ -3,10 +3,10 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 namespace BuildingBlocks.Infrastructure.Persistence;
 
 /// <summary>
-/// Reports whether the service's PostgreSQL database accepts connections. Tagged
+/// Reports whether a module's PostgreSQL database accepts connections. Tagged
 /// <c>ready</c>, so it runs on <c>/health/ready</c> only.
 /// </summary>
-/// <param name="connectionString">The service's connection string.</param>
+/// <param name="connectionString">The module's connection string.</param>
 /// <param name="timeout">How long to wait for a connection.</param>
 internal sealed class PostgresHealthCheck(PostgresConnectionString connectionString, TimeSpan timeout) : IHealthCheck
 {

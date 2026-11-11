@@ -1,7 +1,8 @@
 # Logging and configuration
 
-Every service (Catalog.Api, Orders.Api, Notifications.Worker) uses the same Serilog setup, from
-`BuildingBlocks.Hosting` (all hosts) and `BuildingBlocks.Web` (HTTP APIs only). Nothing here is
+The application (`Host.Api`, which runs every module, see [modules.md](modules.md)) uses one Serilog setup,
+from `BuildingBlocks.Hosting` and `BuildingBlocks.Web`. Every module logs through it, and each request to a module
+endpoint carries a `Module` property. Nothing here is
 IDE-specific: it works the same in Visual Studio, Rider, VS Code, `dotnet run` and Docker.
 
 ## 1. Configuration layering
@@ -13,18 +14,19 @@ Later sources override earlier ones:
 |---|---|---|
 | 1 | `appsettings.json` | Safe defaults for every environment. Committed. **No secrets.** |
 | 2 | `appsettings.{Environment}.json` | Environment-specific values. `appsettings.Development.json` holds development-only settings. Committed. **No secrets.** |
-| 3 | User secrets (Development only) | Local secrets. `dotnet user-secrets set "Key" "value"` from the host project folder, or right-click the project > *Manage User Secrets* in Visual Studio / *Tools > .NET User Secrets* in Rider. |
+| 3 | User secrets (Development only) | Local secrets. `dotnet user-secrets set "Key" "value"` from `src/Host/Host.Api`, or right-click `Host.Api` > *Manage User Secrets* in Visual Studio / *Tools > .NET User Secrets* in Rider. |
 | 4 | Environment variables | Docker, CI and production overrides. `__` (double underscore) separates sections. |
 | 5 | Command-line arguments | One-off overrides, e.g. `--Serilog:MinimumLevel:Default=Debug`. |
 
-The environment comes from `ASPNETCORE_ENVIRONMENT` (APIs) or `DOTNET_ENVIRONMENT` (Worker). The
-`Properties/launchSettings.json` profiles set `Development`; anything else (e.g. Docker) defaults to
+The environment comes from `ASPNETCORE_ENVIRONMENT`. The `Properties/launchSettings.json` profile sets
+`Development`; anything else (e.g. Docker) defaults to
 `Production`.
 
 `Architecture.Tests` enforces **(enforced)**:
 
-- every host has `appsettings.json` and `appsettings.Development.json`;
-- the `Serilog` section is identical in every host, per file, so all services log the same way;
+- the host has `appsettings.json` and `appsettings.Development.json`;
+- the `Serilog` section is identical in every host, per file (there is one host today; the rule keeps a future
+  dedicated host for an extracted module logging the same way);
 - no `Logging` section (Serilog replaces Microsoft.Extensions.Logging filtering, so it would be ignored);
 - no committed value under a key that looks secret (`*Password*`, `*Secret*`, `*Token*`, `*ConnectionString*`,
   `*ApiKey*`, ...). Name the key with an empty value if you want to document it.
@@ -42,8 +44,8 @@ shutdown) at `Information`.
 Development:
 
 ```text
-[18:46:56.851 INF] Catalog.Api Serilog.AspNetCore.RequestLoggingMiddleware corr=9c1a2dd0... trace=f00edd61...
-      HTTP GET /products responded 404 in 0.1341 ms
+[18:46:56.851 INF] Host.Api Serilog.AspNetCore.RequestLoggingMiddleware corr=9c1a2dd0... trace=f00edd61...
+      HTTP GET /api/catalog/products responded 404 in 0.1341 ms
 ```
 
 JSON, using the [CLEF](https://clef-json.org) property names so tools such as Seq, Grafana Loki, Elastic and
@@ -53,8 +55,8 @@ JSON, using the [CLEF](https://clef-json.org) property names so tools such as Se
 {"@t":"2026-11-09T13:19:18.08Z","@l":"Information","@m":"HTTP GET /products responded 400 in 5.5350 ms",
  "@mt":"HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms",
  "@tr":"53ff7c31aa015305a4fe86ce7184c657","@sp":"97d8acfa82a47533","RequestMethod":"GET",
- "RequestPath":"/products","StatusCode":400,"Elapsed":5.535,"CorrelationId":"86c953ee...",
- "SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","Application":"Catalog.Api",
+ "RequestPath":"/api/catalog/products","StatusCode":400,"Elapsed":5.535,"CorrelationId":"86c953ee...",
+ "Module":"catalog","SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","Application":"Host.Api",
  "Environment":"Production","MachineName":"web-1","ThreadId":10}
 ```
 
@@ -65,7 +67,8 @@ template is also in `LogFormats.Json`, used by the bootstrap logger. Keep them i
 
 | Property | Source | Present |
 |---|---|---|
-| `Application` | Host `ApplicationName` (e.g. `Catalog.Api`). Override with `Serilog:Properties:Application`. | Always |
+| `Application` | Host `ApplicationName` (`Host.Api`). Override with `Serilog:Properties:Application`, e.g. to tell deployments apart once a module is extracted. | Always |
+| `Module` | The module whose endpoint handles the request (`catalog`, `orders`, ...) | Requests to `/api/<module>` and `/internal/<module>` endpoints |
 | `Environment` | Host environment name | Always |
 | `MachineName` | `Serilog.Enrichers.Environment` (the container ID in Docker) | Always |
 | `ThreadId` | `Serilog.Enrichers.Thread` | Always |
@@ -73,7 +76,8 @@ template is also in `LogFormats.Json`, used by the bootstrap logger. Keep them i
 | `CorrelationId` | `X-Correlation-ID` request header, or a new ID | HTTP requests; push it yourself in message consumers |
 | `@tr` / `@sp` | W3C trace and span ID of the current `Activity` | HTTP requests, and anything running inside an `Activity` |
 
-These are added in code (`AddServiceLogging`), not in configuration, so no service can drop them by accident.
+These are added in code (`AddServiceLogging`, `MapModules`), not in configuration, so no module can drop them by
+accident.
 Use the constants in `LogProperties` for the names.
 
 ### Correlation ID
@@ -84,9 +88,11 @@ Use the constants in `LogProperties` for the names.
   generates a new one (this blocks log injection through the header);
 - returns it in the `X-Correlation-ID` response header and in error responses (`correlationId`);
 - adds it to every log entry written during the request;
-- tags it on the trace activity as `correlation.id`.
+- tags it on the trace activity as `correlation.id`;
+- is sent on by module clients (`X-Correlation-ID`), so a call from one module to another's internal API logs
+  under the same ID on both sides.
 
-Read it in code with `HttpContext.GetCorrelationId()`. In a message consumer (Worker), take the ID from
+Read it in code with `HttpContext.GetCorrelationId()`. In a message consumer, take the ID from
 the message and push it for the duration of the handling:
 
 ```csharp
@@ -160,14 +166,14 @@ Every setting can be overridden with an environment variable: replace `:` with `
 |---|---|
 | `Serilog:MinimumLevel:Default` | `Serilog__MinimumLevel__Default=Debug` |
 | `Serilog:MinimumLevel:Override:Microsoft.AspNetCore` | `Serilog__MinimumLevel__Override__Microsoft.AspNetCore=Information` |
-| `Serilog:Properties:Application` | `Serilog__Properties__Application=catalog-api` |
+| `Serilog:Properties:Application` | `Serilog__Properties__Application=app` |
 | `HostOptions:ShutdownTimeout` | `HostOptions__ShutdownTimeout=00:00:20` |
 | `ConnectionStrings:CatalogDb` | `ConnectionStrings__CatalogDb=Host=postgres;...` |
 
 Example Docker Compose service (the compose file itself is added with the Docker infrastructure):
 
 ```yaml
-catalog-api:
+app:            # Host.Api
   environment:
     ASPNETCORE_ENVIRONMENT: Production          # JSON logs
     Serilog__MinimumLevel__Default: ${SERILOG_MINIMUM_LEVEL:-Information}
@@ -179,11 +185,12 @@ catalog-api:
 Values such as `APP_DB_PASSWORD` come from the git-ignored `.env` file (see `.env.example`), never from
 `appsettings*.json`.
 
-## 8. Adding a new service
+## 8. Adding a module
 
-1. Reference `BuildingBlocks.Hosting` (and `BuildingBlocks.Web` for an HTTP API) from the host project.
-2. Wrap `Program.cs` in `ServiceHost.RunAsync` and call `AddServiceDefaults()` (Worker) or
-   `AddWebServiceDefaults()` + `UseWebServiceDefaults()` (API), as in the existing services.
-3. Copy `appsettings.json` and `appsettings.Development.json` from an existing host. The `Serilog` section
-   must stay identical (enforced).
-4. Add a `<UserSecretsId>` to the host project.
+Nothing to do: a module registered with `AddModules` logs through the host's Serilog setup and gets the `Module`
+property automatically. Use `ILogger<T>` (ideally `[LoggerMessage]` methods) in its code.
+
+If a module is later given a dedicated host project (see [modules.md](modules.md), section 7), wrap its
+`Program.cs` in `ServiceHost.RunAsync`, call `AddWebServiceDefaults()` / `UseWebServiceDefaults()`, copy
+`appsettings.json` and `appsettings.Development.json` from `Host.Api` (the `Serilog` section must stay identical,
+enforced) and give it its own `<UserSecretsId>`.

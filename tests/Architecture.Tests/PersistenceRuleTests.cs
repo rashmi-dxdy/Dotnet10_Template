@@ -5,7 +5,7 @@ namespace Architecture.Tests;
 
 /// <summary>
 /// Enforces the database ownership model: EF Core lives in Infrastructure only, and every DbContext belongs
-/// to exactly one service. See docs/database.md.
+/// to exactly one module. See docs/database.md.
 /// </summary>
 public sealed partial class PersistenceRuleTests
 {
@@ -17,8 +17,8 @@ public sealed partial class PersistenceRuleTests
     public static TheoryData<string> ProjectNames => new(All.Keys.Order(StringComparer.Ordinal));
 
     /// <summary>
-    /// EF Core and Npgsql runtime packages: service Infrastructure projects and BuildingBlocks.Infrastructure
-    /// only. Domain, Application, Contracts and hosts reach the database through Infrastructure.
+    /// EF Core and Npgsql runtime packages: module Infrastructure projects and BuildingBlocks.Infrastructure
+    /// only. Domain, Application, Api, Contracts and the host reach the database through Infrastructure.
     /// </summary>
     [Theory]
     [MemberData(nameof(ProjectNames))]
@@ -40,7 +40,7 @@ public sealed partial class PersistenceRuleTests
     }
 
     /// <summary>
-    /// EF Core Design/Tools are design-time tooling for migrations and belong in the startup (host) project,
+    /// EF Core Design/Tools are design-time tooling for migrations and belong in the startup (host) project, which is the startup project for every module's migrations,
     /// as a private asset so they never flow to anything that references the host.
     /// </summary>
     [Theory]
@@ -52,31 +52,31 @@ public sealed partial class PersistenceRuleTests
 
         Assert.True(
             project.Kind == ProjectKind.Host || !designTime.Any(),
-            $"{project.Name} references {string.Join(", ", designTime)}; only host projects may (migrations tooling).");
+            $"{project.Name} references {string.Join(", ", designTime)}; only the host may (migrations tooling).");
     }
 
     /// <summary>
-    /// A DbContext may only be declared inside a service's own Infrastructure project. A DbContext in a shared
-    /// project (BuildingBlocks, Contracts) would let services share tables.
+    /// A DbContext may only be declared inside a module's own Infrastructure project. A DbContext in a shared
+    /// project (BuildingBlocks, Contracts) would let modules share tables.
     /// </summary>
     [Fact]
-    public void DbContexts_AreDeclaredOnlyInServiceInfrastructure()
+    public void DbContexts_AreDeclaredOnlyInModuleInfrastructure()
     {
         var violations = Directory.EnumerateFiles(Path.Combine(Root, "src"), "*.cs", SearchOption.AllDirectories)
             .Where(path => !IsBuildOutput(path))
             .Where(path => DbContextDeclaration().IsMatch(File.ReadAllText(path)))
             .Select(path => Path.GetRelativePath(Root, path).Replace('\\', '/'))
-            .Where(path => !ServiceInfrastructurePath().IsMatch(path))
+            .Where(path => !ModuleInfrastructurePath().IsMatch(path))
             .ToList();
 
         Assert.True(
             violations.Count == 0,
-            "DbContext declared outside a service Infrastructure project:\n" + string.Join('\n', violations));
+            "DbContext declared outside a module Infrastructure project:\n" + string.Join('\n', violations));
     }
 
-    /// <summary>Every service has its own DbContext, so it has its own database and connection string.</summary>
+    /// <summary>Every module has its own DbContext, so it has its own connection string and can get its own database.</summary>
     [Fact]
-    public void EveryServiceInfrastructure_DeclaresItsOwnDbContext()
+    public void EveryModuleInfrastructure_DeclaresItsOwnDbContext()
     {
         var missing = OfKind(ProjectKind.Infrastructure)
             .Where(p => !Directory
@@ -90,11 +90,11 @@ public sealed partial class PersistenceRuleTests
     }
 
     /// <summary>
-    /// All services share one database for now, so each DbContext must declare its own table prefix, apply
-    /// it, and no two services may use the same prefix.
+    /// All modules share one database for now, so each DbContext must declare its own table prefix, apply
+    /// it, and no two modules may use the same prefix.
     /// </summary>
     [Fact]
-    public void EveryServiceDbContext_AppliesItsOwnUniqueTablePrefix()
+    public void EveryModuleDbContext_AppliesItsOwnUniqueTablePrefix()
     {
         var contexts = OfKind(ProjectKind.Infrastructure)
             .SelectMany(p => Directory
@@ -118,7 +118,7 @@ public sealed partial class PersistenceRuleTests
         var duplicates = contexts.GroupBy(c => c.Prefix, StringComparer.Ordinal).Where(g => g.Count() > 1).ToList();
         Assert.True(
             duplicates.Count == 0,
-            "Table prefixes must be unique per service: "
+            "Table prefixes must be unique per module: "
             + string.Join(
                 "; ",
                 duplicates.Select(g => $"{g.Key} used by {string.Join(", ", g.Select(c => c.Project))}")));
@@ -133,8 +133,7 @@ public sealed partial class PersistenceRuleTests
         path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
         || path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal);
 
-    private static string ProjectDirectory(ProjectInfo project) =>
-        Path.GetDirectoryName(Path.Combine(Root, project.RelativePath))!;
+    private static string ProjectDirectory(ProjectInfo project) => project.Directory;
 
     // "class X : DbContext" or "class X(...) : DbContext(...)", optionally generic or with more base types.
     [GeneratedRegex(@"\bclass\s+\w+(?:<[^>]*>)?(?:\([^)]*\))?\s*:\s*DbContext\b", RegexOptions.None, 1000)]
@@ -143,6 +142,6 @@ public sealed partial class PersistenceRuleTests
     [GeneratedRegex(@"\bconst\s+string\s+TablePrefix\s*=\s*""(?<prefix>[^""]+)""", RegexOptions.None, 1000)]
     private static partial Regex TablePrefixDeclaration();
 
-    [GeneratedRegex(@"^src/Services/(?<service>[^/]+)/\k<service>\.Infrastructure/", RegexOptions.None, 1000)]
-    private static partial Regex ServiceInfrastructurePath();
+    [GeneratedRegex(@"^src/Modules/(?<module>[^/]+)/\k<module>\.Infrastructure/", RegexOptions.None, 1000)]
+    private static partial Regex ModuleInfrastructurePath();
 }

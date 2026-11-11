@@ -1,17 +1,19 @@
 # Messaging: RabbitMQ
 
-Services exchange integration events through RabbitMQ (RabbitMQ.Client 7.2, Apache-2.0 / MPL-2.0). Application
-code depends only on two technology-agnostic interfaces. The RabbitMQ adapter lives in Infrastructure.
+Modules exchange integration events through RabbitMQ (RabbitMQ.Client 7.2, Apache-2.0 / MPL-2.0). Application
+code depends only on two technology-agnostic interfaces. The RabbitMQ adapter lives in Infrastructure. All
+modules run in one process today ([modules.md](modules.md)), yet they still talk through the broker exactly as
+they will once a module is extracted.
 
 ## 1. Layers
 
 | Layer | What | RabbitMQ.Client? |
 |---|---|---|
 | `BuildingBlocks.Abstractions/Messaging` | `IMessagePublisher`, `IMessageHandler<T>`, `MessageContext<T>`, `MessageHandlingResult`, `MessagePublishException`, `IIntegrationEvent` | No (pure C#) |
-| `Contracts/IntegrationEvents` | The event records services exchange (none yet) | No |
+| `Contracts/IntegrationEvents` | The event records modules exchange (none yet) | No |
 | Domain, Application | Publish through `IMessagePublisher`; handle through `IMessageHandler<T>` | **No (enforced)** |
 | `BuildingBlocks.Infrastructure/Messaging/RabbitMq` | The adapter: connection, publisher, consumers, topology, health check | Yes |
-| `<Service>.Infrastructure` | `Add<Service>Messaging()`: registers the adapter and the service's consumers | Yes |
+| `<Module>.Infrastructure` | `Add<Module>Messaging()`: registers the adapter (once per process) and the module's consumers | Yes |
 
 `Architecture.Tests` fails if any project other than an Infrastructure project references RabbitMQ.Client or
 Confluent.Kafka, or if Domain/Application/Abstractions code contains `using RabbitMQ` **(enforced)**.
@@ -38,13 +40,14 @@ settings tests reject a committed `Password` value **(enforced)**.
 | `InitialConnectRetryDelaySeconds` / `MaxConnectRetryDelaySeconds` | | `1` / `30` |
 | `ConnectionTimeoutSeconds` / `HeartbeatSeconds` | | `10` / `30` |
 
-Missing or invalid settings stop the service at startup with a list of what to fix and the environment variable
+Missing or invalid settings stop the host at startup with a list of what to fix and the environment variable
 for each.
 
-Development (from the host project folder, or right-click the host project > *Manage User Secrets* in
+Development (from `src/Host/Host.Api`, or right-click `Host.Api` > *Manage User Secrets* in
 Visual Studio / *Tools > .NET User Secrets* in Rider):
 
 ```bash
+cd src/Host/Host.Api
 dotnet user-secrets set "RabbitMq:Username" "app"
 dotnet user-secrets set "RabbitMq:Password" "<your local password>"
 ```
@@ -59,7 +62,7 @@ x-rabbitmq: &rabbitmq
   RabbitMq__Username: ${RABBITMQ_USER}
   RabbitMq__Password: ${RABBITMQ_PASSWORD}
 
-catalog-api:
+app:            # Host.Api
   environment:
     <<: *rabbitmq
 ```
@@ -83,8 +86,8 @@ publisher ──► routing key "orders.order-placed" ──► queue "notificat
 
 | Name | Convention | Example |
 |---|---|---|
-| Topic (routing key) | `<publishing-service>.<event>` | `orders.order-placed` |
-| Queue | `<consuming-service>.<purpose>` (`QueuePrefix` in each service) | `notifications.order-placed` |
+| Topic (routing key) | `<publishing-module>.<event>` | `orders.order-placed` |
+| Queue | `<consuming-module>.<purpose>` (`QueuePrefix` in each module) | `notifications.order-placed` |
 | Dead-letter queue | `<queue>.dlq` | `notifications.order-placed.dlq` |
 
 Queues are **quorum queues** (replicated, durable, and the RabbitMQ 4 default for durable data). Queue arguments
@@ -142,9 +145,9 @@ Log entries written while handling carry `MessageId`, `CorrelationId` and `Queue
 
 ## 6. Connection lifecycle, reconnection and shutdown
 
-- **One connection per service**, shared by the publisher and all consumers, named after the service in the
-  management UI. Channels are opened on it; there is never a connection per message.
-- **Startup:** the connection is opened in the background. The service starts even if RabbitMQ is down and keeps
+- **One connection per process**, shared by the publisher and every module's consumers, named after the host
+  in the management UI. Each module still has its own queues, so an extracted module keeps them unchanged. Channels are opened on it; there is never a connection per message.
+- **Startup:** the connection is opened in the background. The host starts even if RabbitMQ is down and keeps
   retrying with exponential backoff (1 s, 2 s, 4 s … max 30 s), logging the reason once as an error and then as
   warnings:
 
@@ -194,11 +197,11 @@ dotnet test --project tests/BuildingBlocks.IntegrationTests
 `--user rabbitmq` avoids an `.erlang.cookie: eacces` start-up crash of the official image seen with Docker
 Desktop on Windows. The management UI is at <http://localhost:15672>.
 
-## 9. Adding messaging to a service
+## 9. Adding messaging to a module
 
 1. Define the event in `src/Contracts/IntegrationEvents` (a record implementing `IIntegrationEvent`).
 2. Publisher: inject `IMessagePublisher` in the Application layer and publish with topic
-   `<your-service>.<event>`.
-3. Consumer: write an `IMessageHandler<TEvent>` in the consuming service's `Infrastructure/Messaging` that sends
-   an Application command, and register it with `AddRabbitMqConsumer` in `Add<Service>Messaging`. Make it
+   `<your-module>.<event>`.
+3. Consumer: write an `IMessageHandler<TEvent>` in the consuming module's `Infrastructure/Messaging` that sends
+   an Application command, and register it with `AddRabbitMqConsumer` in `Add<Module>Messaging`. Make it
    idempotent.

@@ -1,7 +1,7 @@
 namespace BuildingBlocks.Abstractions.Domain;
 
 /// <summary>
-/// Something that happened inside a service's domain. Raised by aggregates and handled
+/// Something that happened inside a module's domain. Raised by aggregates and handled
 /// in-process within the SAME service. Never sent to other services directly.
 /// </summary>
 public interface IDomainEvent

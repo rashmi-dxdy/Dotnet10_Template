@@ -1,8 +1,11 @@
+using BuildingBlocks.Abstractions.Correlation;
 using BuildingBlocks.Hosting.DependencyInjection;
 using BuildingBlocks.Web.Correlation;
+using BuildingBlocks.Web.ExceptionHandling;
 using BuildingBlocks.Web.Logging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 namespace BuildingBlocks.Web.DependencyInjection;
@@ -31,6 +34,13 @@ public static class WebHostingExtensions
                 context.ProblemDetails.Extensions["correlationId"] = correlationId;
             }
         });
+
+        // FluentValidation failures from the MediatR validation behavior, in any module, become 400 responses.
+        builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+
+        // Lets module clients and other outgoing calls carry the current request's correlation ID.
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.TryAddSingleton<ICorrelationIdAccessor, HttpContextCorrelationIdAccessor>();
 
         // Checks themselves are added by the layers that own them (e.g. PostgreSQL by Infrastructure).
         builder.Services.AddHealthChecks();

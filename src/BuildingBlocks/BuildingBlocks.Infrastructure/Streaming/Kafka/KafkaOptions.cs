@@ -22,7 +22,7 @@ public sealed class KafkaOptions
     /// </summary>
     public BrokerAddressFamily BrokerAddressFamily { get; set; } = BrokerAddressFamily.Any;
 
-    /// <summary>Gets or sets the client ID shown in broker logs and metrics. Defaults to the service name.</summary>
+    /// <summary>Gets or sets the client ID shown in broker logs and metrics. Defaults to the host name.</summary>
     public string? ClientId { get; set; }
 
     /// <summary>Gets or sets how clients talk to brokers: <c>Plaintext</c> (local development), <c>Ssl</c>,
@@ -51,7 +51,7 @@ public sealed class KafkaOptions
     public KafkaConsumerOptions Consumer { get; init; } = new();
 
     /// <summary>
-    /// Gets or sets a value indicating whether the service creates missing topics (<see cref="Topics"/> and its
+    /// Gets or sets a value indicating whether the host creates missing topics (<see cref="Topics"/> and its
     /// consumers' dead-letter topics) at startup. On in Development; in production topics are created by
     /// infrastructure tooling with the right partitions, replication and retention.
     /// </summary>
@@ -60,7 +60,9 @@ public sealed class KafkaOptions
     /// <summary>Gets or sets the partitions and replication factor for provisioned topics without explicit values.</summary>
     public KafkaTopicDefaults TopicDefaults { get; set; } = new();
 
-    /// <summary>Gets the topics this service owns (produces to), created when <see cref="ProvisionTopics"/> is on.</summary>
+    /// <summary>
+    /// Gets the topics the modules of this host own (produce to), created when <see cref="ProvisionTopics"/> is on.
+    /// </summary>
     public IList<KafkaTopicOptions> Topics { get; init; } = [];
 
     /// <summary>Lists configuration problems, with the setting and environment variable to fix.</summary>
@@ -141,8 +143,10 @@ public sealed class KafkaProducerOptions
 public sealed class KafkaConsumerOptions
 {
     /// <summary>
-    /// Gets or sets the consumer group. All instances of a service share it, so partitions are divided between
-    /// them and each message is handled once per group. Environment variable: <c>Kafka__Consumer__GroupId</c>.
+    /// Gets or sets the fallback consumer group, used only by consumers registered without one. Modules pass their
+    /// own (<c>&lt;Module&gt;.Infrastructure ... StreamingServiceCollectionExtensions.ConsumerGroup</c>), so each module
+    /// keeps its own offsets in the monolith and after extraction. All instances of a group share its partitions,
+    /// so each message is handled once per group. Environment variable: <c>Kafka__Consumer__GroupId</c>.
     /// </summary>
     public string? GroupId { get; set; }
 
@@ -181,7 +185,7 @@ public sealed class KafkaTopicDefaults
     public short ReplicationFactor { get; set; } = 1;
 }
 
-/// <summary>A topic this service owns.</summary>
+/// <summary>A topic a module owns.</summary>
 public sealed class KafkaTopicOptions
 {
     /// <summary>Gets or sets the topic name, e.g. <c>orders.order-events</c>.</summary>

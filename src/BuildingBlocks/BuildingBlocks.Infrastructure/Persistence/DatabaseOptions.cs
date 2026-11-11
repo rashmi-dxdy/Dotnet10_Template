@@ -1,8 +1,8 @@
 namespace BuildingBlocks.Infrastructure.Persistence;
 
 /// <summary>
-/// EF Core settings shared by every service, bound from the <c>Database</c> configuration section.
-/// Connection strings are NOT here: each service reads its own from <c>ConnectionStrings:&lt;Name&gt;</c>.
+/// EF Core settings shared by every module, bound from the <c>Database</c> configuration section.
+/// Connection strings are NOT here: each module reads its own from <c>ConnectionStrings:&lt;Name&gt;</c>.
 /// </summary>
 public sealed class DatabaseOptions
 {

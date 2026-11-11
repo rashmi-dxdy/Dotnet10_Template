@@ -1,7 +1,7 @@
 namespace BuildingBlocks.Hosting.Logging;
 
 /// <summary>
-/// Serilog.Expressions templates shared by every service. The same templates are set in each service's
+/// Serilog.Expressions templates shared by every host. The same templates are set in each service's
 /// <c>appsettings*.json</c> (<c>Serilog:WriteTo:Console:Args:formatter:template</c>); keep them identical.
 /// </summary>
 public static class LogFormats

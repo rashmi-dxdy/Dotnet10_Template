@@ -4,11 +4,11 @@ using Microsoft.Extensions.Logging;
 namespace BuildingBlocks.Infrastructure.Persistence;
 
 /// <summary>
-/// Checks once, right after startup, that the service's PostgreSQL database is reachable and logs a clear
-/// message either way. It does not stop the service: PostgreSQL may simply start later (e.g. in Docker),
+/// Checks once, right after startup, that a module's PostgreSQL database is reachable and logs a clear
+/// message either way. It does not stop the host: PostgreSQL may simply start later (e.g. in Docker),
 /// EF Core retries transient failures, and <c>/health/ready</c> reports the database as unhealthy meanwhile.
 /// </summary>
-/// <param name="connectionString">The service's connection string.</param>
+/// <param name="connectionString">The module's connection string.</param>
 /// <param name="timeout">How long to wait for a connection.</param>
 /// <param name="logger">The logger.</param>
 internal sealed partial class PostgresStartupCheck(

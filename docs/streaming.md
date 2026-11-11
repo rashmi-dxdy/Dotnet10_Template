@@ -1,6 +1,6 @@
 # Event streaming: Apache Kafka
 
-Services can append to and read from Kafka topics through Confluent.Kafka 2.16 (Apache-2.0). Kafka is configured
+Modules can append to and read from Kafka topics through Confluent.Kafka 2.16 (Apache-2.0). Kafka is configured
 **independently of RabbitMQ**: its own abstractions, its own `Kafka` configuration section and its own health check.
 
 ## 1. Kafka or RabbitMQ?
@@ -20,7 +20,7 @@ Services can append to and read from Kafka topics through Confluent.Kafka 2.16 (
 | `BuildingBlocks.Abstractions/Streaming` | `IEventStreamProducer`, `IStreamMessageHandler<T>`, `StreamMessageContext<T>`, `StreamProduceException` | No (pure C#) |
 | Domain, Application | Produce through `IEventStreamProducer`; handle through `IStreamMessageHandler<T>` | **No (enforced)** |
 | `BuildingBlocks.Infrastructure/Streaming/Kafka` | Producer, consumer, admin/topic provisioning, health check, lifecycle | Yes |
-| `<Service>.Infrastructure` | `Add<Service>Streaming()`: registers the adapter and the service's consumers | Yes |
+| `<Module>.Infrastructure` | `Add<Module>Streaming()`: registers the adapter (once per process) and the module's consumers, in the module's own consumer group | Yes |
 
 `Architecture.Tests` fails if any project other than an Infrastructure project references Confluent.Kafka, or if
 Domain/Application/Abstractions code contains `using Confluent` **(enforced)**.
@@ -33,21 +33,21 @@ Section `Kafka`, overridden by `Kafka__*` environment variables (nested settings
 | Setting | Default | Meaning |
 |---|---|---|
 | `BootstrapServers` | `localhost:9092` | Comma-separated `host:port` list |
-| `ClientId` | service name | Shown in broker logs and metrics |
+| `ClientId` | host name (`Host.Api`) | Shown in broker logs and metrics |
 | `BrokerAddressFamily` | `Any` (`V4` in Development) | See the Windows note below |
 | `SecurityProtocol` | `Plaintext` | `Plaintext`, `Ssl`, `SaslPlaintext`, `SaslSsl` |
 | `SaslMechanism` / `SaslUsername` / `SaslPassword` | `Plain` / – / – | Required for `Sasl*` (`Plain`, `ScramSha256`, `ScramSha512`) |
 | `SslCaLocation` | – | CA file to verify brokers with `Ssl`/`SaslSsl` |
 | `Producer:Acks` / `EnableIdempotence` | `All` / `true` | See section 4 |
 | `Producer:MessageTimeoutMs` / `LingerMs` / `CompressionType` | `30000` / `5` / `Lz4` | |
-| `Consumer:GroupId` | per service: `catalog`, `orders`, `notifications` | See section 6 |
+| `Consumer:GroupId` | `dotnet10template` | Fallback only: every module passes its own group (section 6) |
 | `Consumer:AutoOffsetReset` | `Earliest` | Where a **new** group starts |
 | `Consumer:MaxRetryAttempts` / `RetryBackoffMs` | `3` / `1000` | See section 7 |
 | `ProvisionTopics` | `false` (`true` in Development) | Create missing topics at startup |
 | `TopicDefaults:Partitions` / `ReplicationFactor` | `3` / `1` | For provisioned topics |
-| `Topics` | `[]` | Topics this service owns (section 5) |
+| `Topics` | `[]` | Topics the modules own (section 5) |
 
-Invalid settings stop the service at startup with a list of what to fix and the environment variable for each.
+Invalid settings stop the host at startup with a list of what to fix and the environment variable for each.
 Production with SASL over TLS, for example:
 
 ```yaml
@@ -77,7 +77,8 @@ Reliable settings for the template:
 - **Idempotent producer**: client retries never duplicate or reorder messages within a partition.
 - Automatic retries for up to `MessageTimeoutMs` (30 s). `ProduceAsync` completes on acknowledgement and throws
   `StreamProduceException` if the message could not be delivered.
-- **One producer per service** (thread-safe, keeps its broker connections), flushed on shutdown.
+- **One producer per process**, shared by every module (thread-safe, keeps its broker connections), flushed on
+  shutdown.
 - JSON (camelCase) body. Headers `message-id` (the event's `EventId`), `correlation-id`, `message-type`,
   `content-type`.
 - **Key = partition = order.** Use the aggregate ID as the key when order matters. `null` spreads the load
@@ -88,11 +89,11 @@ Reliable settings for the template:
 
 | Topic | Convention | Example | Owner |
 |---|---|---|---|
-| Event stream | `<producing-service>.<stream>` | `orders.order-events` | The producing service |
+| Event stream | `<producing-module>.<stream>` | `orders.order-events` | The producing module |
 | Dead-letter topic | `<topic>.<consumer-group>.dlt` | `orders.order-events.notifications.dlt` | The consuming group |
 
-The template creates **no business topics**. When a service starts producing a stream, it declares the topic in
-its own `appsettings.json`:
+The template creates **no business topics**. When a module starts producing a stream, declare the topic in the
+host's `appsettings.json` (one list for all modules; the topic name says which module owns it):
 
 ```json
 "Kafka": {
@@ -106,9 +107,9 @@ How topics get created:
 
 | Environment | How |
 |---|---|
-| **Development** | `ProvisionTopics: true` (Development default): at startup the service creates its missing `Topics` and its consumers' dead-letter topics. Existing topics are never changed. |
+| **Development** | `ProvisionTopics: true` (Development default): at startup the host creates its missing `Topics` and its consumers' dead-letter topics. Existing topics are never changed. |
 | **CLI** (any environment) | `kafka-topics.sh --bootstrap-server localhost:9092 --create --topic orders.order-events --partitions 6 --replication-factor 3 --config retention.ms=604800000` |
-| **Production** | Infrastructure as code (Terraform, Strimzi `KafkaTopic`, Confluent Cloud, …), with `ProvisionTopics: false`. Services should not need topic-creation rights. |
+| **Production** | Infrastructure as code (Terraform, Strimzi `KafkaTopic`, Confluent Cloud, …), with `ProvisionTopics: false`. The application should not need topic-creation rights. |
 
 Choosing values:
 
@@ -139,9 +140,15 @@ topic orders.order-events (3 partitions)
   P0, P1, P2 ──► catalog instance A ── group "catalog": gets ALL messages again, independently
 ```
 
-- **One group per service** (`Kafka:Consumer:GroupId`). All instances of a service share it, so scaling out
-  divides the partitions between them. More instances than partitions leaves the extra ones idle.
-- **Different services use different groups**, so each service receives every message (publish/subscribe).
+- **One group per module**, named after the module (`<Module>.Infrastructure ...
+  StreamingServiceCollectionExtensions.ConsumerGroup`) and passed to every `AddKafkaConsumer` call. All instances
+  of the host (or, after extraction, of the module's own process) share it, so scaling out divides the partitions
+  between them. More instances than partitions leaves the extra ones idle.
+- **Different modules use different groups**, so each module receives every message (publish/subscribe), even
+  though they run in one process. Because the group is the module's, extracting the module keeps its offsets: the
+  new process resumes where the monolith stopped.
+- `Kafka:Consumer:GroupId` is only the fallback for a consumer registered without a group. Don't rely on it: one
+  shared group would make modules split each other's partitions.
 - `AddKafkaConsumer<T, THandler>(topic, groupId: "...")` gives one consumer its own group, when it must track
   offsets separately (e.g. a projection you want to rebuild by resetting its offsets).
 - **Rebalancing:** when instances join or leave, partitions are reassigned. The template uses the
@@ -169,7 +176,7 @@ internal sealed class OrderEventsHandler(ISender sender) : IStreamMessageHandler
 }
 
 // DependencyInjection/StreamingServiceCollectionExtensions.cs, in AddNotificationsStreaming
-services.AddKafkaConsumer<OrderShipped, OrderEventsHandler>("orders.order-events");
+services.AddKafkaConsumer<OrderShipped, OrderEventsHandler>("orders.order-events", ConsumerGroup);
 ```
 
 - Messages are handled **one at a time per consumer, in partition order**, each in a new DI scope. Log entries
@@ -193,7 +200,7 @@ messages back to the original topic.
 
 ## 8. Lifecycle, reconnection and shutdown
 
-- **Startup:** in the background the service checks the cluster and, with `ProvisionTopics`, creates missing
+- **Startup:** in the background the host checks the cluster and, with `ProvisionTopics`, creates missing
   topics. It starts even if Kafka is down:
 
   ```text
@@ -233,10 +240,11 @@ dotnet test --project tests/BuildingBlocks.IntegrationTests
 In Git Bash, prefix `docker exec` commands with `MSYS_NO_PATHCONV=1`, e.g.
 `MSYS_NO_PATHCONV=1 docker exec kafka-dev /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list`.
 
-## 11. Adding a stream to a service
+## 11. Adding a stream to a module
 
-1. Producer: add the topic to the service's `Kafka:Topics`, inject `IEventStreamProducer` in the Application layer
+1. Producer: add the topic to the host's `Kafka:Topics`, inject `IEventStreamProducer` in the Application layer
    and produce with a meaningful key.
-2. Consumer: write an `IStreamMessageHandler<T>` in the consuming service's `Infrastructure/Messaging` that sends
-   an Application command. Register it with `AddKafkaConsumer` in `Add<Service>Streaming`, and make it idempotent.
+2. Consumer: write an `IStreamMessageHandler<T>` in the consuming module's `Infrastructure/Messaging` that sends
+   an Application command. Register it with `AddKafkaConsumer(topic, ConsumerGroup)` in `Add<Module>Streaming`, and
+   make it idempotent.
 3. Production: create the topic (and the consumer's `.dlt` topic) with infrastructure tooling.

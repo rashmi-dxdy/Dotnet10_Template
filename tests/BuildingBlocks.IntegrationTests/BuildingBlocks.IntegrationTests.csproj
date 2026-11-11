@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Infrastructure smoke tests against REAL services (RabbitMQ). Each test skips itself when the service is not
-    configured, so `dotnet test` stays green on machines without it. See docs/messaging.md.
+    Tests against REAL processes and services:
+    - Modules/: module-to-module HTTP calls over real Kestrel servers, in one process and split
+      across two hosts (no external services needed, always run). See docs/modules.md.
+    - Messaging/, Streaming/: RabbitMQ and Kafka smoke tests. Each skips itself when its broker is
+      not configured, so `dotnet test` stays green without them. See docs/messaging.md, docs/streaming.md.
   -->
 
   <ItemGroup>
@@ -11,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\BuildingBlocks\BuildingBlocks.Infrastructure\BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\BuildingBlocks.Web\BuildingBlocks.Web.csproj" />
   </ItemGroup>
 
 </Project>

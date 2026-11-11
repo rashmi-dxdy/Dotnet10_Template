@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Notifications module's public contract for OTHER modules: its module name and the request/response
+    DTOs of its internal HTTP API (/internal/notifications/...). Plain serializable records only: no logic,
+    no references to the module's own projects, no packages (enforced by Architecture.Tests).
+    Other modules may reference this project, never the Notifications module's other projects. When the
+    module is extracted, this project can be published as a NuGet package unchanged.
+  -->
+
+</Project>

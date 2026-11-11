@@ -1,10 +1,16 @@
-# .NET 10 Microservices Template
+# .NET 10 Modular Monolith Template
 
-A starting point for building microservices on .NET 10 LTS. It provides the shared repository structure,
-build configuration and conventions. It contains **no business functionality**, so each service you add
-gets the same build rules, analyzers and package versions.
+A starting point for a **modular monolith** on .NET 10 LTS: one deployable application (`src/Host/Host.Api`)
+hosting independent modules (Catalog, Orders, Notifications). Each module is a DDD/CQRS bounded context with its
+own tables (prefixed, in one shared database), and modules talk only through internal HTTP APIs and integration
+events. Any module can later be **extracted to its own process and database by configuration, without code
+changes** (see [docs/modules.md](docs/modules.md)).
 
-> **Status:** the solution skeleton only. Service projects and the Docker Compose infrastructure are not added yet.
+It contains **no business functionality**: only the structure, conventions, build rules and infrastructure that
+features plug into.
+
+> **Status:** the module skeletons, host and infrastructure wiring are in place. The Docker Compose
+> infrastructure is not added yet.
 
 ## Technology stack
 
@@ -27,6 +33,12 @@ gets the same build rules, analyzers and package versions.
 
 ```text
 .
+├── src/
+│   ├── Host/Host.Api          # The one deployable application: composes the modules (startup project)
+│   ├── Modules/<Module>/      # <Module>.Domain, .Application, .Infrastructure, .Api
+│   ├── Contracts/             # IntegrationEvents + <Module>.Contracts (what other modules may see)
+│   └── BuildingBlocks/        # Shared technical plumbing, no business code
+├── tests/                     # Architecture, unit and integration tests
 ├── Dotnet10Template.slnx      # Solution (XML .slnx format)
 ├── global.json                # Pins the .NET SDK version
 ├── Directory.Build.props      # Shared MSBuild settings for every project
@@ -38,10 +50,11 @@ gets the same build rules, analyzers and package versions.
 
 ## Documentation
 
-- [docs/architecture.md](docs/architecture.md): DDD boundaries, CQRS, dependency rules, events, cross-service communication
+- [docs/modules.md](docs/modules.md): modular monolith, module anatomy, calling another module, internal API security, extracting a module
+- [docs/architecture.md](docs/architecture.md): DDD boundaries, CQRS, dependency rules, events, cross-module communication
 - [docs/code-quality.md](docs/code-quality.md): analyzers, formatting and how to fix violations
 - [docs/logging.md](docs/logging.md): Serilog structured logging, configuration layering, Docker overrides, secrets
-- [docs/database.md](docs/database.md): EF Core + PostgreSQL, shared database with per-service table prefixes, connection strings, health checks, migrations
+- [docs/database.md](docs/database.md): EF Core + PostgreSQL, shared database with per-module table prefixes, connection strings, health checks, migrations
 - [docs/messaging.md](docs/messaging.md): RabbitMQ publishing and consuming, ack/nack/requeue, dead-lettering, reconnection, smoke tests
 - [docs/streaming.md](docs/streaming.md): Kafka producing and consuming, topics, consumer groups, offsets, dead-letter topics, smoke tests
 
@@ -59,7 +72,13 @@ dotnet --version
 
 # Create your local environment file (never commit .env)
 cp .env.example .env
+
+# Run the application (every module) on http://localhost:5100
+# Needs ConnectionStrings:<Module>Db and RabbitMq credentials in user secrets - see docs/database.md, docs/messaging.md
+dotnet run --project src/Host/Host.Api
 ```
+
+In Visual Studio or Rider, set **Host.Api** as the startup project.
 
 ## Conventions
 
@@ -100,4 +119,4 @@ Run `dotnet format` to apply the rules.
 
 - Never commit `.env`, `secrets.json`, certificates or real connection strings. All of these are git-ignored.
 - `.env.example` contains placeholders only.
-- For local development, prefer `dotnet user-secrets` or environment variables.
+- For local development, prefer `dotnet user-secrets` (on `Host.Api`) or environment variables.

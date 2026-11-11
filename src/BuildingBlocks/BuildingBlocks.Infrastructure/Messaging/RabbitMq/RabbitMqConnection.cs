@@ -8,7 +8,7 @@ using RabbitMQ.Client.Exceptions;
 namespace BuildingBlocks.Infrastructure.Messaging.RabbitMq;
 
 /// <summary>
-/// The service's single, long-lived RabbitMQ connection, shared by the publisher and all consumers. Never one
+/// The process's single, long-lived RabbitMQ connection, shared by the publisher and all consumers. Never one
 /// connection per message: channels are opened on it as needed. Once established, RabbitMQ.Client's automatic
 /// recovery reconnects it and restores channels, queues, bindings and consumers after a network failure.
 /// </summary>

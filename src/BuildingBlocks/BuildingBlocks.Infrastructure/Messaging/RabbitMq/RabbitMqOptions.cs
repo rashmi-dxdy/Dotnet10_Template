@@ -24,11 +24,11 @@ public sealed class RabbitMqOptions
     /// <summary>Gets or sets the virtual host. Environment variable: <c>RabbitMq__VirtualHost</c>.</summary>
     public string VirtualHost { get; set; } = "/";
 
-    /// <summary>Gets or sets the durable topic exchange every service publishes to and consumes from.</summary>
+    /// <summary>Gets or sets the durable topic exchange every module publishes to and consumes from.</summary>
     public string Exchange { get; set; } = "dotnet10template.events";
 
     /// <summary>
-    /// Gets or sets the connection name shown in the RabbitMQ management UI. Defaults to the service name.
+    /// Gets or sets the connection name shown in the RabbitMQ management UI. Defaults to the host name.
     /// </summary>
     public string? ClientProvidedName { get; set; }
 

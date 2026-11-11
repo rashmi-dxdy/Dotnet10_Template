@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Services\Notifications\Notifications.Application\Notifications.Application.csproj" />
-    <ProjectReference Include="..\..\src\Services\Notifications\Notifications.Domain\Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\Notifications.Application\Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\Notifications.Domain\Notifications.Domain.csproj" />
   </ItemGroup>
 
 </Project>

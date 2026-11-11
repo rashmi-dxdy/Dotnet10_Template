@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Notifications module's entry point and HTTP surface: NotificationsModule (IModule) registers the module's
+    layers and maps its endpoints. Composed by the host (src/Host/Host.Api); it has no Program.cs
+    of its own. See docs/modules.md.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Notifications.Application\Notifications.Application.csproj" />
+    <ProjectReference Include="..\Notifications.Infrastructure\Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks.Web\BuildingBlocks.Web.csproj" />
+    <ProjectReference Include="..\..\..\Contracts\Notifications.Contracts\Notifications.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

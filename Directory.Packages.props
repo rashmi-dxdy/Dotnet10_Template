@@ -36,6 +36,15 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.14" />
   </ItemGroup>
 
+  <ItemGroup Label="HTTP clients between modules">
+    <!--
+      Standard resilience pipeline for module clients (timeouts, circuit breaker, safe-method retries).
+      Kept on the 10.x line (dotnet/extensions), whose net10.0 dependencies match the 10.0.x runtime
+      packages above; 11.x requires newer 10.0.x runtime packages.
+    -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
+  </ItemGroup>
+
   <ItemGroup Label="CQRS - MediatR">
     <!--
       Pinned to 12.x on purpose: 12.5.0 is the last Apache-2.0 release. MediatR 13+ is commercially

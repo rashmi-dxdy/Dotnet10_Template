@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using BuildingBlocks.Abstractions.Correlation;
 using BuildingBlocks.Hosting.Logging;
 using Microsoft.AspNetCore.Http;
 using Serilog.Context;
@@ -15,7 +16,7 @@ namespace BuildingBlocks.Web.Correlation;
 public sealed class CorrelationIdMiddleware(RequestDelegate next)
 {
     /// <summary>The HTTP header that carries the correlation ID.</summary>
-    public const string HeaderName = "X-Correlation-ID";
+    public const string HeaderName = CorrelationHeader.Name;
 
     internal const string ItemKey = "CorrelationId";
 

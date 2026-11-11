@@ -1,16 +1,17 @@
 # Database: EF Core 10 and PostgreSQL
 
-Every service uses EF Core 10 with the Npgsql provider. The setup is central (one helper in
-`BuildingBlocks.Infrastructure`), but every service has **its own DbContext, its own connection string and its
-own table prefix**. The template contains no entities, tables, migrations or seed data.
+Every module uses EF Core 10 with the Npgsql provider. The setup is central (one helper in
+`BuildingBlocks.Infrastructure`), but every module has **its own DbContext, its own connection string and its
+own table prefix**, even though all modules run in one process (`Host.Api`, see [modules.md](modules.md)). The
+template contains no entities, tables, migrations or seed data.
 
 ## 1. Database ownership model
 
-### Current phase: one shared database, tables prefixed per service
+### Current phase: one shared database, tables prefixed per module
 
-For now all services use **one PostgreSQL database**. Each service owns the tables that carry its prefix:
+For now all modules use **one PostgreSQL database**. Each module owns the tables that carry its prefix:
 
-| Service | DbContext | Table prefix | Example table | Migrations history table |
+| Module | DbContext | Table prefix | Example table | Migrations history table |
 |---|---|---|---|---|
 | Catalog | `CatalogDbContext` | `CAT_` | `CAT_Products` | `CAT_EFMigrationsHistory` |
 | Orders | `OrdersDbContext` | `ORD_` | `ORD_Orders` | `ORD_EFMigrationsHistory` |
@@ -21,11 +22,12 @@ For now all services use **one PostgreSQL database**. Each service owns the tabl
 │  CAT_Products  CAT_...        ORD_Orders  ORD_...       NTF_Messages ... │
 │  CAT_EFMigrationsHistory      ORD_EFMigrationsHistory   NTF_EFMigr...    │
 └────────▲──────────────────────────────▲──────────────────────▲──────────┘
-     Catalog.Api                    Orders.Api        Notifications.Worker
+   Catalog module                 Orders module          Notifications module
  (CatalogDbContext, CAT_)       (OrdersDbContext, ORD_)  (NotificationsDbContext, NTF_)
+         └──────────────── all in one process: Host.Api ────────────────┘
 ```
 
-The prefix is applied automatically to every table of the service's model (entity tables, explicit
+The prefix is applied automatically to every table of the module's model (entity tables, explicit
 `ToTable("...")` names, many-to-many join tables, owned types, inheritance hierarchies) by
 `modelBuilder.ApplyTablePrefix(TablePrefix)` at the end of each `OnModelCreating`. Write entity configurations
 with plain names (`ToTable("Products")`); the prefix is added for you.
@@ -36,17 +38,21 @@ Sharing a database does **not** mean sharing data. Treat each prefix as if it we
 
 | Rule | Why |
 |---|---|
-| A service reads and writes **only its own prefix**, through its own DbContext | Another service's tables are its private implementation |
+| A module reads and writes **only its own prefix**, through its own DbContext | Another module's tables are its private implementation |
 | **No foreign keys, joins, views or SQL across prefixes** | They would break the moment the tables move to separate databases |
-| Reference another service's data **by ID only**, and get it through integration events or an API | Each service keeps the copy it needs |
-| One DbContext per service, declared only in its own `Infrastructure` **(enforced)** | No shared model, no shared tables |
+| Reference another module's data **by ID only**, and get it through integration events or its internal API ([modules.md](modules.md)) | Each module keeps the copy it needs |
+| One DbContext per module, declared only in its own `Infrastructure` **(enforced)** | No shared model, no shared tables |
 | Every DbContext declares a unique `TablePrefix` and applies it **(enforced)** | No name clashes in the shared database |
-| Each service has its own connection string key and migrations history table | Moving a service out is a configuration change, and migration records never mix |
-| Migrations touch **only** their own service's tables | Services deploy independently |
+| Each module has its own connection string key and migrations history table | Moving a module out is a configuration change, and migration records never mix |
+| Migrations touch **only** their own module's tables | Modules can be extracted and deployed independently |
 
-### Later: one database per service
+Running in one process changes none of this. It is tempting to inject another module's DbContext or join its
+tables "because it's right there"; the architecture tests and the module boundaries (no project references
+between modules) make that impossible.
 
-When a service needs its own database (scale, isolation, independent backups or upgrades), it moves out
+### Later: one database per module
+
+When a module needs its own database (scale, isolation, independent backups or upgrades), it moves out
 without code changes. See section 8. In production, separate databases (ideally separate servers or managed
 instances) are the target. The shared database is a starting point, not the end state.
 
@@ -55,10 +61,10 @@ instances) are the target. The shared database is a starting point, not the end 
 | Where | What |
 |---|---|
 | `BuildingBlocks.Infrastructure/DependencyInjection/PersistenceServiceCollectionExtensions.cs` | `AddPostgresDbContext<TContext>(configuration, connectionStringName, tablePrefix)`: the central EF Core + Npgsql setup |
-| `BuildingBlocks.Infrastructure/Persistence/TablePrefix.cs` | `ApplyTablePrefix` (model-wide prefixing), prefix validation, per-service history table name |
+| `BuildingBlocks.Infrastructure/Persistence/TablePrefix.cs` | `ApplyTablePrefix` (model-wide prefixing), prefix validation, per-module history table name |
 | `BuildingBlocks.Infrastructure/Persistence/` | Connection string validation, shared `Database` options, PostgreSQL health check, startup connectivity check |
-| `<Service>.Infrastructure/Persistence/<Service>DbContext.cs` | The service's own DbContext (no entities yet), with `ConnectionStringName` and `TablePrefix` |
-| `<Service>.Infrastructure/DependencyInjection/PersistenceServiceCollectionExtensions.cs` | `Add<Service>Persistence(configuration)`: the service's extension point, called by `Add<Service>Infrastructure` |
+| `<Module>.Infrastructure/Persistence/<Module>DbContext.cs` | The module's own DbContext (no entities yet), with `ConnectionStringName` and `TablePrefix` |
+| `<Module>.Infrastructure/DependencyInjection/PersistenceServiceCollectionExtensions.cs` | `Add<Module>Persistence(configuration)`: the module's extension point, called by `Add<Module>Infrastructure` |
 
 `AddPostgresDbContext` is generic on purpose. It configures a context; it never defines one. There is no
 shared DbContext base class.
@@ -67,9 +73,9 @@ shared DbContext base class.
 
 | Package | Allowed in |
 |---|---|
-| `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL` | `<Service>.Infrastructure`, `BuildingBlocks.Infrastructure` |
-| `Microsoft.EntityFrameworkCore.Design`, `.Tools` | Host projects (`Api`, `Worker`) only, as `PrivateAssets="all"`: design-time tooling for migrations |
-| none of the above | Domain, Application, Contracts, other BuildingBlocks |
+| `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL` | `<Module>.Infrastructure`, `BuildingBlocks.Infrastructure` |
+| `Microsoft.EntityFrameworkCore.Design`, `.Tools` | `Host.Api` only, as `PrivateAssets="all"`: design-time tooling for migrations |
+| none of the above | Domain, Application, Api, Contracts, other BuildingBlocks |
 
 Domain and Application never see EF Core. They define repository interfaces (`Domain/Repositories`) that
 Infrastructure implements.
@@ -78,13 +84,17 @@ Infrastructure implements.
 
 ### Connection strings
 
-Each service has its own key. **For now all three contain the same connection string** (the shared database):
+Each module has its own key, all set on the one host. **For now all three contain the same connection string**
+(the shared database):
 
-| Service | Key | Environment variable |
+| Module | Key | Environment variable |
 |---|---|---|
-| Catalog.Api | `ConnectionStrings:CatalogDb` | `ConnectionStrings__CatalogDb` |
-| Orders.Api | `ConnectionStrings:OrdersDb` | `ConnectionStrings__OrdersDb` |
-| Notifications.Worker | `ConnectionStrings:NotificationsDb` | `ConnectionStrings__NotificationsDb` |
+| Catalog | `ConnectionStrings:CatalogDb` | `ConnectionStrings__CatalogDb` |
+| Orders | `ConnectionStrings:OrdersDb` | `ConnectionStrings__OrdersDb` |
+| Notifications | `ConnectionStrings:NotificationsDb` | `ConnectionStrings__NotificationsDb` |
+
+Only enabled modules read their key: a deployment that runs just Catalog (`Modules__Orders__Enabled=false`, ...)
+needs only `ConnectionStrings__CatalogDb`.
 
 Format: `Host=...;Port=5432;Database=...;Username=...;Password=...` ([Npgsql keywords](https://www.npgsql.org/doc/connection-string-parameters.html)).
 
@@ -93,13 +103,13 @@ production).** The committed `appsettings.json` contains an empty placeholder th
 `Architecture.Tests` fails if any committed connection string, password, secret or token has a value
 **(enforced)**.
 
-Development: set it once per host project, from the project folder, or right-click the host project >
+Development: set them in the host's user secrets, from `src/Host/Host.Api`, or right-click `Host.Api` >
 *Manage User Secrets* in Visual Studio / *Tools > .NET User Secrets* in Rider:
 
 ```bash
-cd src/Services/Catalog/Catalog.Api
+cd src/Host/Host.Api
 dotnet user-secrets set "ConnectionStrings:CatalogDb" "Host=localhost;Port=5432;Database=dotnet10template;Username=app;Password=<your local password>"
-# same value for Orders.Api (OrdersDb) and Notifications.Worker (NotificationsDb)
+# same value for OrdersDb and NotificationsDb
 ```
 
 Docker Compose (values from the git-ignored `.env`, see `.env.example`):
@@ -107,25 +117,22 @@ Docker Compose (values from the git-ignored `.env`, see `.env.example`):
 ```yaml
 x-app-db: &app-db "Host=postgres;Port=5432;Database=${APP_DB_NAME};Username=${APP_DB_USER};Password=${APP_DB_PASSWORD}"
 
-catalog-api:
+app:            # Host.Api, every module
   environment:
     ConnectionStrings__CatalogDb: *app-db
-orders-api:
-  environment:
     ConnectionStrings__OrdersDb: *app-db
-notifications-worker:
-  environment:
     ConnectionStrings__NotificationsDb: *app-db
 ```
 
 At startup the connection string is validated:
 
-- **Missing** → the service stops immediately (exit code 1) with a `Fatal` log entry that explains how to
+- **Missing** (for an enabled module) → the host stops immediately (exit code 1) with a `Fatal` log entry that explains how to
   set it.
 - **Invalid** or without `Host`/`Database` → the same, without ever repeating the configured value (it may
   contain a password).
-- `Application Name` defaults to the service name, so `pg_stat_activity` shows which service holds which
-  connection. That's handy while they share a database.
+- `Application Name` defaults to `<host>:<connection name>` (e.g. `Host.Api:CatalogDb`), so
+  `pg_stat_activity` shows which module holds which connection. That's handy while modules share a process
+  and a database.
 
 ### Shared EF Core settings: `Database` section
 
@@ -138,7 +145,7 @@ At startup the connection string is validated:
 | `EnableDetailedErrors` | `false` (`true` in Development) | More detailed EF Core errors |
 | `EnableSensitiveDataLogging` | `false` | Logs parameter values and entity data. **Keep it off**: they can contain personal or secret data |
 
-Invalid values stop the service at startup (`ValidateOnStart`). Override any of them with environment
+Invalid values stop the host at startup (`ValidateOnStart`). Override any of them with environment
 variables, e.g. `Database__MaxRetryCount=10`.
 
 With retries enabled, wrap user-initiated transactions in the execution strategy
@@ -146,9 +153,9 @@ With retries enabled, wrap user-initiated transactions in the execution strategy
 
 ## 4. When PostgreSQL is unavailable
 
-The service **starts anyway**, because PostgreSQL may just be starting too (e.g. in Docker Compose).
+The host **starts anyway**, because PostgreSQL may just be starting too (e.g. in Docker Compose).
 
-1. A startup check connects once and logs the outcome:
+1. A startup check per module connects once and logs the outcome:
 
    ```text
    [ERR] PostgreSQL CatalogDb is unavailable at app@localhost:5432/dotnet10template: cannot reach the server
@@ -179,11 +186,10 @@ The service **starts anyway**, because PostgreSQL may just be starting too (e.g.
 | Endpoint | Runs | Use for |
 |---|---|---|
 | `/health/live` | No checks | Liveness: the process is up |
-| `/health/ready` | Checks tagged `ready`, including `postgresql-<Name>Db` | Readiness: the service can do its work |
+| `/health/ready` | Checks tagged `ready`, including one `postgresql-<Module>Db` per enabled module | Readiness: the application can do its work |
 
 Responses contain only the status (`Healthy` / `Unhealthy`), no details. Details, with the target but never the
-password, go to the logs. The Worker has no HTTP endpoints. Its PostgreSQL check is registered and can be
-exposed later (e.g. a health check publisher). Its startup check logs the same messages.
+password, go to the logs.
 
 The health check opens a plain connection (no EF Core retries), so it answers within
 `ConnectivityProbeTimeoutSeconds`. Give your readiness probe a longer timeout than that.
@@ -199,61 +205,64 @@ CREATE ROLE app LOGIN PASSWORD '<APP_DB_PASSWORD>';
 CREATE DATABASE dotnet10template OWNER app;
 ```
 
-The services create their own prefixed tables through migrations (section 7).
+The modules create their own prefixed tables through migrations (section 7).
 
 ## 7. Migrations (when the first entities exist)
 
-The template has none. Each service has its **own** migrations, in its own
+The template has none. Each module has its **own** migrations, in its own
 `Infrastructure/Persistence/Migrations`, recorded in its **own** history table (`CAT_EFMigrationsHistory`, ...).
-A migration creates or changes only that service's prefixed tables. The host project is the startup project,
-because it holds the configuration and the EF design-time packages.
+A migration creates or changes only that module's prefixed tables. `Host.Api` is the startup project for every
+module, because it holds the configuration and the EF design-time packages. Name the context, since the host
+knows all three.
 
 **CLI / Rider / VS Code** (`dotnet ef` is in the local tool manifest; run `dotnet tool restore` once):
 
 ```bash
 dotnet ef migrations add InitialCreate \
-  --project src/Services/Catalog/Catalog.Infrastructure \
-  --startup-project src/Services/Catalog/Catalog.Api \
+  --project src/Modules/Catalog/Catalog.Infrastructure \
+  --startup-project src/Host/Host.Api \
+  --context CatalogDbContext \
   --output-dir Persistence/Migrations
 ```
 
 **Visual Studio, Package Manager Console:**
 
 ```powershell
-Add-Migration InitialCreate -Project Catalog.Infrastructure -StartupProject Catalog.Api -OutputDir Persistence/Migrations
+Add-Migration InitialCreate -Project Catalog.Infrastructure -StartupProject Host.Api -Context CatalogDbContext -OutputDir Persistence/Migrations
 ```
 
-Both need the service's connection string configured (section 3). `migrations add` does not connect;
-`database update` does. Check the generated migration: every table name must start with the service's prefix.
+Both need the module's connection string configured (section 3). `migrations add` does not connect;
+`database update` does. Check the generated migration: every table name must start with the module's prefix.
 
 Applying migrations: do it as a deployment step (`dotnet ef migrations bundle` or
-`dotnet ef migrations script --idempotent`), not automatically at service startup. With several replicas,
-startup migrations race each other, and the service login should not need DDL rights in production.
+`dotnet ef migrations script --idempotent`, once per module context), not automatically at startup. With
+several replicas, startup migrations race each other, and the application login should not need DDL rights in
+production.
 
-**Never change a service's `TablePrefix` once its tables exist.** It renames every table.
+**Never change a module's `TablePrefix` once its tables exist.** It renames every table.
 
-## 8. Moving a service to its own database later
+## 8. Moving a module to its own database later
 
 Because of the rules in section 1, this needs **no code changes**. For example, for Orders:
 
 1. Create the new database (and ideally a dedicated login for Orders).
 2. Copy the Orders tables, **only** `ORD_*` including `ORD_EFMigrationsHistory`, e.g. with
    `pg_dump --table='"ORD_*"' ... | psql <new database>`, during a maintenance window or with replication.
-3. Point **only** `ConnectionStrings__OrdersDb` at the new database and redeploy Orders.
+3. Point **only** `ConnectionStrings__OrdersDb` at the new database and redeploy (the monolith, or the
+   extracted Orders process; see [modules.md](modules.md), section 7).
 4. Verify, then drop the `ORD_*` tables from the shared database.
 
 The prefix can stay. It is harmless in a dedicated database, and keeping it avoids a rename migration.
 
-## 9. Adding persistence to a new service
+## 9. Adding persistence to a new module
 
-1. Create `<Service>.Infrastructure/Persistence/<Service>DbContext.cs` (copy an existing one) with
-   `ConnectionStringName = "<Service>Db"` and a new, unique `TablePrefix` (2-10 upper-case letters or digits
+1. Create `<Module>.Infrastructure/Persistence/<Module>DbContext.cs` (copy an existing one) with
+   `ConnectionStringName = "<Module>Db"` and a new, unique `TablePrefix` (2-10 upper-case letters or digits
    plus `_`, e.g. `INV_`). Keep `modelBuilder.ApplyTablePrefix(TablePrefix)` as the last line of
    `OnModelCreating`.
-2. Create `Add<Service>Persistence` in `<Service>.Infrastructure/DependencyInjection/` calling
-   `AddPostgresDbContext<<Service>DbContext>(configuration, <Service>DbContext.ConnectionStringName,
-   <Service>DbContext.TablePrefix)`, and call it from `Add<Service>Infrastructure`.
-3. Add `"ConnectionStrings": { "<Service>Db": "" }` and the `Database` section to the host's
-   `appsettings.json`, and set the real value (the shared database) in user secrets / environment.
-4. Reference `Microsoft.EntityFrameworkCore.Design` and `.Tools` (`PrivateAssets="all"`) from the host.
-5. Add the prefix to the table in section 1.
+2. Create `Add<Module>Persistence` in `<Module>.Infrastructure/DependencyInjection/` calling
+   `AddPostgresDbContext<<Module>DbContext>(configuration, <Module>DbContext.ConnectionStringName,
+   <Module>DbContext.TablePrefix)`, and call it from `Add<Module>Infrastructure`.
+3. Add `"<Module>Db": ""` under `ConnectionStrings` in `Host.Api/appsettings.json` (enforced), and set the real
+   value (the shared database) in user secrets / environment.
+4. Add the prefix to the table in section 1.

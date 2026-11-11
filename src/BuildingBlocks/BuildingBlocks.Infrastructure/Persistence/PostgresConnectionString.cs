@@ -76,14 +76,15 @@ public sealed class PostgresConnectionString
         {
             throw new InvalidOperationException(
                 $"PostgreSQL connection string 'ConnectionStrings:{name}' has no {string.Join(" or ", missing)}. "
-                + "Every service connects to its own database. See docs/database.md.");
+                + "Every module has its own connection string. See docs/database.md.");
         }
 
-        // Shows which service holds a connection (pg_stat_activity), useful with a shared dev server.
+        // Shows which module holds a connection in pg_stat_activity (e.g. "Host.Api:CatalogDb"): all modules share
+        // one process, and for now one database.
         if (string.IsNullOrEmpty(builder.ApplicationName)
             && Assembly.GetEntryAssembly()?.GetName().Name is { } applicationName)
         {
-            builder.ApplicationName = applicationName;
+            builder.ApplicationName = $"{applicationName}:{name}";
         }
 
         var target = $"{builder.Username ?? "(default user)"}@{builder.Host}:{builder.Port}/{builder.Database}";

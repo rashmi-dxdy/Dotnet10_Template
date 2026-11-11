@@ -7,27 +7,33 @@
     <Project Path="src/BuildingBlocks/BuildingBlocks.Infrastructure/BuildingBlocks.Infrastructure.csproj" />
     <Project Path="src/BuildingBlocks/BuildingBlocks.Web/BuildingBlocks.Web.csproj" />
   </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/Host.Api/Host.Api.csproj" />
+  </Folder>
   <Folder Name="/src/Contracts/">
+    <Project Path="src/Contracts/Catalog.Contracts/Catalog.Contracts.csproj" />
     <Project Path="src/Contracts/IntegrationEvents/IntegrationEvents.csproj" />
+    <Project Path="src/Contracts/Notifications.Contracts/Notifications.Contracts.csproj" />
+    <Project Path="src/Contracts/Orders.Contracts/Orders.Contracts.csproj" />
   </Folder>
-  <Folder Name="/src/Services/" />
-  <Folder Name="/src/Services/Catalog/">
-    <Project Path="src/Services/Catalog/Catalog.Api/Catalog.Api.csproj" />
-    <Project Path="src/Services/Catalog/Catalog.Application/Catalog.Application.csproj" />
-    <Project Path="src/Services/Catalog/Catalog.Domain/Catalog.Domain.csproj" />
-    <Project Path="src/Services/Catalog/Catalog.Infrastructure/Catalog.Infrastructure.csproj" />
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/Catalog.Api/Catalog.Api.csproj" />
+    <Project Path="src/Modules/Catalog/Catalog.Application/Catalog.Application.csproj" />
+    <Project Path="src/Modules/Catalog/Catalog.Domain/Catalog.Domain.csproj" />
+    <Project Path="src/Modules/Catalog/Catalog.Infrastructure/Catalog.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/src/Services/Notifications/">
-    <Project Path="src/Services/Notifications/Notifications.Application/Notifications.Application.csproj" />
-    <Project Path="src/Services/Notifications/Notifications.Domain/Notifications.Domain.csproj" />
-    <Project Path="src/Services/Notifications/Notifications.Infrastructure/Notifications.Infrastructure.csproj" />
-    <Project Path="src/Services/Notifications/Notifications.Worker/Notifications.Worker.csproj" />
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Notifications.Api/Notifications.Api.csproj" />
+    <Project Path="src/Modules/Notifications/Notifications.Application/Notifications.Application.csproj" />
+    <Project Path="src/Modules/Notifications/Notifications.Domain/Notifications.Domain.csproj" />
+    <Project Path="src/Modules/Notifications/Notifications.Infrastructure/Notifications.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/src/Services/Orders/">
-    <Project Path="src/Services/Orders/Orders.Api/Orders.Api.csproj" />
-    <Project Path="src/Services/Orders/Orders.Application/Orders.Application.csproj" />
-    <Project Path="src/Services/Orders/Orders.Domain/Orders.Domain.csproj" />
-    <Project Path="src/Services/Orders/Orders.Infrastructure/Orders.Infrastructure.csproj" />
+  <Folder Name="/src/Modules/Orders/">
+    <Project Path="src/Modules/Orders/Orders.Api/Orders.Api.csproj" />
+    <Project Path="src/Modules/Orders/Orders.Application/Orders.Application.csproj" />
+    <Project Path="src/Modules/Orders/Orders.Domain/Orders.Domain.csproj" />
+    <Project Path="src/Modules/Orders/Orders.Infrastructure/Orders.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />

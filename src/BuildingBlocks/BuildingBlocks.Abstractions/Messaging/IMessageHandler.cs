@@ -1,7 +1,7 @@
 namespace BuildingBlocks.Abstractions.Messaging;
 
 /// <summary>
-/// Handles one message type received from the broker. Implementations live in the consuming service and are
+/// Handles one message type received from the broker. Implementations live in the consuming module and are
 /// resolved from a new DI scope per message. They must be idempotent: a message can be delivered more than once.
 /// </summary>
 /// <typeparam name="TMessage">The message type.</typeparam>

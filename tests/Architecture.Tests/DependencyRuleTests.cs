@@ -7,19 +7,20 @@ namespace Architecture.Tests;
 /// </summary>
 public sealed class DependencyRuleTests
 {
-    public static TheoryData<string> ServiceProjectNames =>
-        new(RepositoryProjects.ServiceProjects.Select(p => p.Name).Order(StringComparer.Ordinal));
+    public static TheoryData<string> ModuleProjectNames =>
+        new(RepositoryProjects.ModuleProjects.Select(p => p.Name).Order(StringComparer.Ordinal));
 
     public static TheoryData<string> DomainProjectNames =>
         new(OfKind(ProjectKind.Domain).Select(p => p.Name).Order(StringComparer.Ordinal));
 
     [Fact]
-    public void Repository_ContainsExpectedServiceLayers()
+    public void Repository_ContainsExpectedModuleLayers()
     {
         Assert.NotEmpty(OfKind(ProjectKind.Domain));
         Assert.NotEmpty(OfKind(ProjectKind.Application));
         Assert.NotEmpty(OfKind(ProjectKind.Infrastructure));
-        Assert.NotEmpty(OfKind(ProjectKind.Host));
+        Assert.NotEmpty(OfKind(ProjectKind.Api));
+        Assert.Single(OfKind(ProjectKind.Host));
     }
 
     [Theory]
@@ -28,37 +29,35 @@ public sealed class DependencyRuleTests
         Assert.Empty(All[projectName].PackageReferences);
 
     [Theory]
-    [MemberData(nameof(ServiceProjectNames))]
-    public void ServiceProject_ReferencesOnlyAllowedProjects(string projectName)
+    [MemberData(nameof(ModuleProjectNames))]
+    public void ModuleProject_ReferencesOnlyAllowedProjects(string projectName)
     {
         var project = All[projectName];
-        var allowed = AllowedReferences(project);
-
-        var violations = project.ProjectReferences.Where(r => !allowed.Contains(r)).ToList();
+        var violations = project.ProjectReferences.Where(r => !IsAllowed(project, r)).ToList();
         var message =
             $"{project.Name} ({project.Kind}) has disallowed references: {string.Join(", ", violations)}. "
-            + $"Allowed: {string.Join(", ", allowed.Order(StringComparer.Ordinal))}.";
+            + "See the dependency table in docs/architecture.md.";
 
         Assert.True(violations.Count == 0, message);
     }
 
     [Theory]
-    [MemberData(nameof(ServiceProjectNames))]
-    public void ServiceProject_DoesNotReferenceAnotherService(string projectName)
+    [MemberData(nameof(ModuleProjectNames))]
+    public void ModuleProject_DoesNotReferenceAnotherModule(string projectName)
     {
         var project = All[projectName];
 
-        var crossService = project.ProjectReferences
+        var crossModule = project.ProjectReferences
             .Where(All.ContainsKey)
             .Select(r => All[r])
-            .Where(r => r.Service is not null && !string.Equals(r.Service, project.Service, StringComparison.Ordinal))
+            .Where(r => r.Module is not null && !string.Equals(r.Module, project.Module, StringComparison.Ordinal))
             .Select(r => r.Name)
             .ToList();
         var message =
-            $"{project.Name} references another service: {string.Join(", ", crossService)}. "
-            + "Services must communicate through IntegrationEvents only.";
+            $"{project.Name} references another module: {string.Join(", ", crossModule)}. Modules talk to each "
+            + "other only through internal HTTP APIs (<Module>.Contracts) and IntegrationEvents.";
 
-        Assert.True(crossService.Count == 0, message);
+        Assert.True(crossModule.Count == 0, message);
     }
 
     /// <summary>
@@ -122,51 +121,39 @@ public sealed class DependencyRuleTests
         Assert.Empty(contracts.PackageReferences);
     }
 
-    private static HashSet<string> AllowedReferences(ProjectInfo project)
+    private static bool IsAllowed(ProjectInfo project, string reference)
     {
-        var s = project.Service!;
+        var m = project.Module!;
+        var ownContracts = Is(ContractsOf(m));
 
         return project.Kind switch
         {
-            ProjectKind.Domain => [BuildingBlocksAbstractions],
+            ProjectKind.Domain => reference is BuildingBlocksAbstractions,
             ProjectKind.Application =>
-                [$"{s}.Domain", BuildingBlocksAbstractions, BuildingBlocksApplication, IntegrationEvents],
+                Is($"{m}.Domain")
+                || ownContracts
+                || reference is BuildingBlocksAbstractions or BuildingBlocksApplication or IntegrationEvents,
+
+            // Any module's contracts: Infrastructure implements the HTTP clients of other modules' internal APIs.
             ProjectKind.Infrastructure =>
-            [
-                $"{s}.Application",
-                $"{s}.Domain",
-                BuildingBlocksAbstractions,
-                BuildingBlocksApplication,
-                BuildingBlocksInfrastructure,
-                IntegrationEvents,
-            ],
-            ProjectKind.Host => HostReferences(project),
-            _ => throw new InvalidOperationException($"{project.Name} is not a service project."),
+                Is($"{m}.Application")
+                || Is($"{m}.Domain")
+                || IsModuleContracts(reference)
+                || reference is BuildingBlocksAbstractions
+                    or BuildingBlocksApplication
+                    or BuildingBlocksInfrastructure
+                    or IntegrationEvents,
+            ProjectKind.Api =>
+                Is($"{m}.Application")
+                || Is($"{m}.Infrastructure")
+                || ownContracts
+                || reference is BuildingBlocksAbstractions
+                    or BuildingBlocksApplication
+                    or BuildingBlocksHosting
+                    or BuildingBlocksWeb,
+            _ => throw new InvalidOperationException($"{project.Name} is not a module project."),
         };
-    }
 
-    /// <summary>
-    /// Hosts may use the shared hosting setup. Only HTTP APIs may use BuildingBlocks.Web, so Workers don't
-    /// pull in ASP.NET Core.
-    /// </summary>
-    private static HashSet<string> HostReferences(ProjectInfo project)
-    {
-        var s = project.Service!;
-        HashSet<string> allowed =
-        [
-            $"{s}.Application",
-            $"{s}.Infrastructure",
-            BuildingBlocksAbstractions,
-            BuildingBlocksApplication,
-            BuildingBlocksHosting,
-            BuildingBlocksInfrastructure,
-        ];
-
-        if (project.Name.EndsWith(".Api", StringComparison.Ordinal))
-        {
-            allowed.Add(BuildingBlocksWeb);
-        }
-
-        return allowed;
+        bool Is(string name) => string.Equals(reference, name, StringComparison.Ordinal);
     }
 }
